@@ -1000,6 +1000,8 @@ type searchResultResolver struct {
 	repo      *repositoryResolver         // repo name match
 	fileMatch *fileMatchResolver          // text match
 	diff      *commitSearchResultResolver // diff or commit match
+
+	codemod *codemodResultResolver // codemod match (and replacement, if any)
 }
 
 // getSearchResultURIs returns the repo name and file uri respectiveley
@@ -1042,6 +1044,9 @@ func (g *searchResultResolver) ToFileMatch() (*fileMatchResolver, bool) {
 func (g *searchResultResolver) ToCommitSearchResult() (*commitSearchResultResolver, bool) {
 	return g.diff, g.diff != nil
 }
+func (g *searchResultResolver) ToCodemodResult() (*codemodResultResolver, bool) {
+	return g.codemod, g.codemod != nil
+}
 
 func (g *searchResultResolver) resultCount() int32 {
 	switch {
@@ -1051,6 +1056,8 @@ func (g *searchResultResolver) resultCount() int32 {
 		}
 		return 1 // 1 to count "empty" results like type:path results
 	case g.diff != nil:
+		return 1
+	case g.codemod != nil:
 		return 1
 	default:
 		return 1

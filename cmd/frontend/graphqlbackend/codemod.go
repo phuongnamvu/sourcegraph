@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/opentracing-contrib/go-stdlib/nethttp"
@@ -23,12 +25,64 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
+// codemodResultResolver is a resolver for the GraphQL type `CommitSearchResult`
+type codemodResultResolver struct {
+	commit  *gitCommitResolver
+	path    string
+	fileURL string
+	diff    string
+	matches []*searchResultMatchResolver
+}
+
+func (r *codemodResultResolver) Commit() *gitCommitResolver { return r.commit }
+func (r *codemodResultResolver) Icon() string {
+	return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' style='width:24px;height:24px' viewBox='0 0 24 24'%3E%3Cpath fill='%23a2b0cd' d='M11,6C12.38,6 13.63,6.56 14.54,7.46L12,10H18V4L15.95,6.05C14.68,4.78 12.93,4 11,4C7.47,4 4.57,6.61 4.08,10H6.1C6.56,7.72 8.58,6 11,6M16.64,15.14C17.3,14.24 17.76,13.17 17.92,12H15.9C15.44,14.28 13.42,16 11,16C9.62,16 8.37,15.44 7.46,14.54L10,12H4V18L6.05,15.95C7.32,17.22 9.07,18 11,18C12.55,18 14,17.5 15.14,16.64L20,21.5L21.5,20L16.64,15.14Z' /%3E%3C/svg%3E"
+}
+func (r *codemodResultResolver) Label() (*markdownResolver, error) {
+	commitURL, err := r.commit.URL()
+	if err != nil {
+		return nil, err
+	}
+	text := fmt.Sprintf("[%s](%s) › [%s](%s)", r.commit.repo.Name(), commitURL, r.path, r.fileURL)
+	return &markdownResolver{text: text}, nil
+}
+
+func (r *codemodResultResolver) URL() string {
+	return ""
+}
+
+func (r *codemodResultResolver) Detail() (*markdownResolver, error) {
+	// diff, err := diff.ParseFileDiff(r.diff)
+	// if err != nil {return nil, err}
+	// diff.Stat()
+	return &markdownResolver{text: strconv.Itoa(len(r.matches))}, nil
+}
+
+func (r *codemodResultResolver) Matches() []*searchResultMatchResolver {
+	return r.matches
+}
+
 func callCodemod(ctx context.Context, args *search.Args) ([]*searchResultResolver, *searchResultsCommon, error) {
+	matchValues := args.Query.Values(query.FieldDefault)
+	var matchPatterns []string
+	for _, v := range matchValues {
+		if v.String != nil && *v.String != "" {
+			matchPatterns = append(matchPatterns, *v.String)
+		}
+		if v.Regexp != nil {
+			// HACK
+			matchPatterns = append(matchPatterns, strings.Replace(v.Regexp.String(), "\\", "", -1))
+		}
+	}
+	matchPattern := strings.Join(matchPatterns, " ")
 	replacementValues, _ := args.Query.StringValues(query.FieldReplace)
-	replacementText := replacementValues[0]
+	var replacementText string
+	if len(replacementValues) > 0 {
+		replacementText = replacementValues[0]
+	}
 
 	var err error
-	tr, ctx := trace.New(ctx, "callCodemod", fmt.Sprintf("pattern: %+v, replace: %+v, numRepoRevs: %d", args.Pattern, replacementText, len(args.Repos)))
+	tr, ctx := trace.New(ctx, "callCodemod", fmt.Sprintf("pattern: %+v, replace: %+v, numRepoRevs: %d", matchPattern, replacementText, len(args.Repos)))
 	defer func() {
 		tr.SetError(err)
 		tr.Finish()
@@ -40,14 +94,14 @@ func callCodemod(ctx context.Context, args *search.Args) ([]*searchResultResolve
 	var (
 		wg          sync.WaitGroup
 		mu          sync.Mutex
-		unflattened [][]*fileMatchResolver
+		unflattened [][]*codemodResultResolver
 		common      = &searchResultsCommon{}
 	)
 	for _, repoRev := range args.Repos {
 		wg.Add(1)
 		go func(repoRev search.RepositoryRevisions) {
 			defer wg.Done()
-			results, searchErr := callCodemodInRepo(ctx, repoRev, args.Pattern, args.Query, replacementText)
+			results, searchErr := callCodemodInRepo(ctx, repoRev, matchPattern, replacementText)
 			if ctx.Err() == context.Canceled {
 				// Our request has been canceled (either because another one of args.repos had a
 				// fatal error, or otherwise), so we can just ignore these results.
@@ -73,18 +127,19 @@ func callCodemod(ctx context.Context, args *search.Args) ([]*searchResultResolve
 		return nil, nil, err
 	}
 
-	flattened := flattenFileMatches(unflattened, int(args.Pattern.FileMatchLimit))
-	results := make([]*searchResultResolver, len(flattened))
-	for i, fm := range flattened {
-		results[i] = &searchResultResolver{fileMatch: fm}
+	var results []*searchResultResolver
+	for _, ur := range unflattened {
+		for _, r := range ur {
+			results = append(results, &searchResultResolver{codemod: r})
+		}
 	}
 	return results, common, nil
 }
 
 var replacerURL = env.Get("REPLACER_URL", "http://replacer:3185", "replacer server URL")
 
-func callCodemodInRepo(ctx context.Context, repoRevs search.RepositoryRevisions, info *search.PatternInfo, query *query.Query, replacementText string) (results []*fileMatchResolver, err error) {
-	tr, ctx := trace.New(ctx, "callCodemodInRepo", fmt.Sprintf("repoRevs: %v, pattern %+v, replace: %+v", repoRevs, info.Pattern, replacementText))
+func callCodemodInRepo(ctx context.Context, repoRevs search.RepositoryRevisions, matchPattern, replacementText string) (results []*codemodResultResolver, err error) {
+	tr, ctx := trace.New(ctx, "callCodemodInRepo", fmt.Sprintf("repoRevs: %v, pattern %+v, replace: %+v", repoRevs, matchPattern, replacementText))
 	defer func() {
 		tr.LazyPrintf("%d results", len(results))
 		tr.SetError(err)
@@ -107,7 +162,7 @@ func callCodemodInRepo(ctx context.Context, repoRevs search.RepositoryRevisions,
 	q := u.Query()
 	q.Set("repo", string(repoRevs.Repo.Name))
 	q.Set("commit", string(commit))
-	q.Set("matchtemplate", info.Pattern)
+	q.Set("matchtemplate", matchPattern)
 	q.Set("rewritetemplate", replacementText)
 	q.Set("fileextension", ".go") // TODO!(sqs): un-hardcode
 	u.RawQuery = q.Encode()
@@ -151,9 +206,61 @@ func callCodemodInRepo(ctx context.Context, repoRevs search.RepositoryRevisions,
 				End   struct{ Offset int64 }
 			}
 			ReplacementContent string `json:"replacement_content"`
+			Environment        []struct {
+				Value string
+			}
 		} `json:"in_place_substitutions"`
 		Diff string
 	}
+
+	computeCodemodResultMatches := func(fileURL string, raw *rawCodemodResult) ([]*searchResultMatchResolver, error) {
+		// rawDiff2, highlights, err := git.FilterAndHighlightDiff([]byte(rawDiff), nil, false, pathmatch.All)
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		seenMatches := map[string]struct{}{}
+		matches := func(text string) (hs []*highlightedRange) {
+			if _, seen := seenMatches[text]; seen {
+				return nil
+			}
+			seenMatches[text] = struct{}{}
+			lines := strings.Split(raw.Diff, "\n")
+			for i, line := range lines {
+				if line[1] == ' ' {
+					continue
+				}
+				if pos := strings.Index(line, text); pos != -1 {
+					hs = append(hs, &highlightedRange{
+						line:      int32(i) - 1,
+						character: int32(pos),
+						length:    int32(len(text)),
+					})
+				}
+			}
+			return hs
+		}
+
+		var highlights []*highlightedRange
+		for _, sub := range raw.InPlaceSubstitutions {
+			highlights = append(highlights, matches(sub.ReplacementContent)...)
+			for _, e := range sub.Environment {
+				highlights = append(highlights, matches(e.Value)...)
+			}
+		}
+
+		matchBody, matchHighlights := cleanDiffPreview(highlights, raw.Diff)
+		_ = matchBody[strings.Index(matchBody, "@@"):]
+
+		return []*searchResultMatchResolver{
+			{
+				url:        fileURL,
+				body:       "```diff\n" + raw.Diff[strings.Index(raw.Diff, "@@"):] + "\n```",
+				highlights: matchHighlights,
+			},
+		}, nil
+	}
+
 	var rawResults []*rawCodemodResult
 	decoder := json.NewDecoder(resp.Body)
 	for decoder.More() {
@@ -166,15 +273,22 @@ func callCodemodInRepo(ctx context.Context, repoRevs search.RepositoryRevisions,
 		}
 		rawResults = append(rawResults, rawResult)
 	}
-	results = make([]*fileMatchResolver, len(rawResults))
+	results = make([]*codemodResultResolver, len(rawResults))
 	for i, raw := range rawResults {
-
-		results[i] = &fileMatchResolver{
-			JPath:        raw.URI,
-			JLineMatches: nil, // TODO!(sqs)
-			uri:          fileMatchURI(repoRevs.Repo.Name, repoRevs.Revs[0].RevSpec, raw.URI),
-			repo:         repoRevs.Repo,
-			commitID:     commit,
+		fileURL := fileMatchURI(repoRevs.Repo.Name, repoRevs.Revs[0].RevSpec, raw.URI)
+		matches, err := computeCodemodResultMatches(fileURL, raw)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("invalid result (%d)", i))
+		}
+		results[i] = &codemodResultResolver{
+			commit: &gitCommitResolver{
+				repo:     &repositoryResolver{repo: repoRevs.Repo},
+				inputRev: &repoRevs.Revs[0].RevSpec,
+			},
+			path:    raw.URI,
+			fileURL: fileURL,
+			diff:    raw.Diff,
+			matches: matches,
 		}
 	}
 	return results, nil

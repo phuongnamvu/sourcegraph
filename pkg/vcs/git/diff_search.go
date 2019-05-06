@@ -412,7 +412,7 @@ func RawLogDiffSearch(ctx context.Context, repo gitserver.Repo, opt RawLogDiffSe
 			}
 
 			var err error
-			rawDiff, result.DiffHighlights, err = filterAndHighlightDiff(rawDiff, query, opt.OnlyMatchingHunks, pathMatcher)
+			rawDiff, result.DiffHighlights, err = FilterAndHighlightDiff(rawDiff, query, opt.OnlyMatchingHunks, pathMatcher)
 			if err != nil {
 				return nil, false, err
 			}
