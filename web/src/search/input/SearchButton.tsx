@@ -32,7 +32,7 @@ export class SearchButton extends React.Component<Props, State> {
     public render(): JSX.Element | null {
         const docsURLPrefix = window.context.sourcegraphDotComMode ? 'https://docs.sourcegraph.com' : '/help'
         return (
-            <div className="search-button d-flex">
+            <div className="search-button d-flex text-nowrap">
                 <button className="btn btn-primary search-button__btn" type="submit" onClick={this.onClick}>
                     <SearchIcon className="icon-inline" />
                     {!this.props.noLabel && <span className="search-button__label">Search</span>}

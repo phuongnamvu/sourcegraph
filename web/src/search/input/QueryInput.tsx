@@ -18,11 +18,10 @@ import {
     toArray,
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
-import { TokenTextInput } from '../../../../shared/src/components/tokenTextInput/TokenTextInput'
 import { eventLogger } from '../../tracking/eventLogger'
 import { scrollIntoView } from '../../util'
 import { fetchSuggestions } from '../backend'
-import { QueryInputInlineOptions } from './query/QueryInputInlineOptions'
+import { QueryInput3 } from './QueryInput3'
 import { createSuggestion, Suggestion, SuggestionItem } from './Suggestion'
 
 /**
@@ -39,7 +38,7 @@ const USE_TOKEN_TEXT_QUERY_INPUT = localStorage.getItem('tokenTextQueryInputExp'
  */
 export const queryUpdates = new Subject<string>()
 
-interface Props {
+export interface QueryInputProps {
     location: H.Location
     history: H.History
 
@@ -89,10 +88,10 @@ interface State {
     loading: boolean
 }
 
-export class QueryInput extends React.Component<Props, State> {
+class QueryInput2 extends React.Component<QueryInputProps, State> {
     private static SUGGESTIONS_QUERY_MIN_LENGTH = 2
 
-    private componentUpdates = new Subject<Props>()
+    private componentUpdates = new Subject<QueryInputProps>()
 
     /** Subscriptions to unsubscribe from on component unmount */
     private subscriptions = new Subscription()
@@ -121,7 +120,7 @@ export class QueryInput extends React.Component<Props, State> {
     /** Only used to keep track if the user has typed a single character into the input field so we can log an event once. */
     private hasLoggedFirstInput = false
 
-    constructor(props: Props) {
+    constructor(props: QueryInputProps) {
         super(props)
 
         this.state = {
@@ -140,7 +139,7 @@ export class QueryInput extends React.Component<Props, State> {
                     distinctUntilChanged(),
                     debounceTime(200),
                     switchMap(query => {
-                        if (query.length < QueryInput.SUGGESTIONS_QUERY_MIN_LENGTH) {
+                        if (query.length < QueryInput2.SUGGESTIONS_QUERY_MIN_LENGTH) {
                             return [{ suggestions: [], selectedSuggestion: -1, loading: false }]
                         }
                         const fullQuery = [this.props.prependQueryForSuggestions, this.props.value]
@@ -268,7 +267,7 @@ export class QueryInput extends React.Component<Props, State> {
         }
     }
 
-    public componentWillReceiveProps(newProps: Props): void {
+    public componentWillReceiveProps(newProps: QueryInputProps): void {
         this.componentUpdates.next(newProps)
     }
 
@@ -276,48 +275,36 @@ export class QueryInput extends React.Component<Props, State> {
         this.subscriptions.unsubscribe()
     }
 
-    public componentDidUpdate(prevProps: Props, prevState: State): void {
+    public componentDidUpdate(prevProps: QueryInputProps, prevState: State): void {
         // Check if selected suggestion is out of view
         scrollIntoView(this.suggestionListElement, this.selectedSuggestionElement)
     }
 
     public render(): JSX.Element | null {
         const showSuggestions =
-            this.props.value.length >= QueryInput.SUGGESTIONS_QUERY_MIN_LENGTH &&
+            this.props.value.length >= QueryInput2.SUGGESTIONS_QUERY_MIN_LENGTH &&
             this.state.inputFocused &&
             !this.state.hideSuggestions &&
             this.state.suggestions.length !== 0
 
-        const inputClassName = 'form-control border-0 query-input2__input rounded-left e2e-query-input'
-        const inputPlaceholder = this.props.placeholder === undefined ? 'Search code...' : this.props.placeholder
-
         return (
             <div className="query-input2">
                 <div className="input-group border">
-                    {USE_TOKEN_TEXT_QUERY_INPUT ? (
-                        <TokenTextInput
-                            className={inputClassName}
-                            value={this.props.value}
-                            onChange={this.onInputValueChange}
-                        />
-                    ) : (
-                        <input
-                            className={inputClassName}
-                            value={this.props.value}
-                            autoFocus={this.props.autoFocus === true}
-                            onChange={this.onInputChange}
-                            onKeyDown={this.onInputKeyDown}
-                            onFocus={this.onInputFocus}
-                            onBlur={this.onInputBlur}
-                            spellCheck={false}
-                            autoCapitalize="off"
-                            placeholder={inputPlaceholder}
-                            ref={ref => (this.inputElement = ref!)}
-                            name="query"
-                            autoComplete="off"
-                        />
-                    )}
-                    <QueryInputInlineOptions className="input-group-append" />
+                    <input
+                        className="form-control border-0 query-input2__input rounded-left e2e-query-input"
+                        value={this.props.value}
+                        autoFocus={this.props.autoFocus === true}
+                        onChange={this.onInputChange}
+                        onKeyDown={this.onInputKeyDown}
+                        onFocus={this.onInputFocus}
+                        onBlur={this.onInputBlur}
+                        spellCheck={false}
+                        autoCapitalize="off"
+                        placeholder={this.props.placeholder === undefined ? 'Search code...' : this.props.placeholder}
+                        ref={ref => (this.inputElement = ref!)}
+                        name="query"
+                        autoComplete="off"
+                    />
                 </div>
                 {showSuggestions && (
                     <ul className="query-input2__suggestions" ref={this.setSuggestionListElement}>
@@ -375,15 +362,11 @@ export class QueryInput extends React.Component<Props, State> {
     }
 
     private onInputChange: React.ChangeEventHandler<HTMLInputElement> = event => {
-        this.onInputValueChange(event.currentTarget.value)
-    }
-
-    private onInputValueChange = (value: string) => {
         if (!this.hasLoggedFirstInput) {
             eventLogger.log('SearchInitiated')
             this.hasLoggedFirstInput = true
         }
-        this.inputValues.next(value)
+        this.inputValues.next(event.currentTarget.value)
     }
 
     private onInputFocus: React.FocusEventHandler<HTMLInputElement> = event => {
@@ -444,3 +427,5 @@ export class QueryInput extends React.Component<Props, State> {
         })
     }
 }
+
+export const QueryInput = USE_TOKEN_TEXT_QUERY_INPUT ? QueryInput3 : QueryInput2
