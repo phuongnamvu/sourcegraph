@@ -8,13 +8,13 @@ import DownloadIcon from 'mdi-react/DownloadIcon'
 import MapSearchIcon from 'mdi-react/MapSearchIcon'
 import TimerSandIcon from 'mdi-react/TimerSandIcon'
 import * as React from 'react'
-import { ActionsNavItems } from '../../../../shared/src/actions/ActionsNavItems'
 import { ContributableMenu } from '../../../../shared/src/api/protocol'
 import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
 import * as GQL from '../../../../shared/src/graphql/schema'
 import { PlatformContextProps } from '../../../../shared/src/platform/context'
 import { TelemetryProps } from '../../../../shared/src/telemetry/telemetryService'
 import { pluralize } from '../../../../shared/src/util/strings'
+import { WebActionsNavItems as ActionsNavItems } from '../../components/shared'
 import { ServerBanner } from '../../marketing/ServerBanner'
 import { PerformanceWarningAlert } from '../../site/PerformanceWarningAlert'
 
@@ -115,14 +115,7 @@ export const SearchResultsInfoBar: React.FunctionComponent<SearchResultsInfoBarP
                     )}
                 </div>
                 <ul className="search-results-info-bar__row-right nav align-items-center justify-content-end">
-                    <ActionsNavItems
-                        {...props}
-                        listItemClass="nav-item"
-                        actionItemClass="nav-link"
-                        actionItemIconClass="icon-inline"
-                        menu={ContributableMenu.SearchResultsToolbar}
-                        wrapInList={false}
-                    />
+                    <ActionsNavItems {...props} menu={ContributableMenu.SearchResultsToolbar} wrapInList={false} />
                     {/* Expand all feature */}
                     {props.results.results.length > 0 && (
                         <li className="nav-item">

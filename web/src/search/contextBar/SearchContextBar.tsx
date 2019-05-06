@@ -1,9 +1,21 @@
+import H from 'history'
 import React from 'react'
+import { ContributableMenu } from '../../../../shared/src/api/protocol'
+import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
+import { PlatformContextProps } from '../../../../shared/src/platform/context'
+import { TelemetryProps } from '../../../../shared/src/telemetry/telemetryService'
+import { WebActionsNavItems as ActionsNavItems } from '../../components/shared'
 import { FilterChip } from '../FilterChip'
 
-export const SearchContextBar: React.FunctionComponent<{
+interface Props
+    extends ExtensionsControllerProps<'executeCommand' | 'services'>,
+        PlatformContextProps<'forceUpdateTooltip'>,
+        TelemetryProps {
     className?: string
-}> = ({ className = '' }) => (
+    location: H.Location
+}
+
+export const SearchContextBar: React.FunctionComponent<Props> = ({ className = '', ...props }) => (
     <nav className={`search-context-bar border-right ${className}`}>
         <section className="card border-0 rounded-0">
             <h5 className="card-header rounded-0">Repositories</h5>
@@ -69,6 +81,14 @@ export const SearchContextBar: React.FunctionComponent<{
                     <FilterChip name="More than 1 year ago" value="_" query="a" count={83} />
                 </li>
             </ul>
+        </section>
+        <section className="border-top mt-3 pt-1">
+            <ActionsNavItems
+                {...props}
+                menu={ContributableMenu.SearchResultsToolbar}
+                wrapInList={true}
+                actionItemClass="nav-link px-2"
+            />
         </section>
     </nav>
 )

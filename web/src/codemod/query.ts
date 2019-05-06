@@ -2,13 +2,13 @@ import { quoteIfNeeded } from '../search'
 
 export function queryFindAndReplaceOptions(query: string): { find: string; replace: string } {
     // TODO!(sqs): hacky
-    const m = query.match(/^(.*) replace:['"]?(.*?)['"]?$/)
+    const m = query.match(/^(.*) replace:['"]?(.*?)['"]?$/m)
     if (!m) {
         return { find: '', replace: '' }
     }
     const find = m[1]
-        .split(/\s+/g)
-        .filter(part => !/^\w+:/.test(part))
+        .split(/\s+/gm)
+        .filter(part => !/^\w+:/m.test(part))
         .join(' ')
     return { find, replace: m[2] }
 }

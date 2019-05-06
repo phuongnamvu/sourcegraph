@@ -722,6 +722,8 @@ func (r *searchResolver) doResults(ctx context.Context, forceOnlyResultType stri
 	var resultTypes []string
 	if forceOnlyResultType != "" {
 		resultTypes = []string{forceOnlyResultType}
+	} else if len(r.query.Values(query.FieldReplace)) > 0 {
+		resultTypes = []string{"codemod"}
 	} else {
 		resultTypes, _ = r.query.StringValues(query.FieldType)
 		if len(resultTypes) == 0 {
@@ -913,6 +915,30 @@ func (r *searchResolver) doResults(ctx context.Context, forceOnlyResultType stri
 				if commitCommon != nil {
 					commonMu.Lock()
 					common.update(*commitCommon)
+					commonMu.Unlock()
+				}
+			})
+		case "codemod":
+			wg := waitGroup(true)
+			wg.Add(1)
+			goroutine.Go(func() {
+				defer wg.Done()
+
+				codemodResults, codemodCommon, err := callCodemod(ctx, &args)
+				// Timeouts are reported through searchResultsCommon so don't report an error for them
+				if err != nil && !isContextError(ctx, err) {
+					multiErrMu.Lock()
+					multiErr = multierror.Append(multiErr, errors.Wrap(err, "codemod search failed"))
+					multiErrMu.Unlock()
+				}
+				if codemodResults != nil {
+					resultsMu.Lock()
+					results = append(results, codemodResults...)
+					resultsMu.Unlock()
+				}
+				if codemodCommon != nil {
+					commonMu.Lock()
+					common.update(*codemodCommon)
 					commonMu.Unlock()
 				}
 			})
