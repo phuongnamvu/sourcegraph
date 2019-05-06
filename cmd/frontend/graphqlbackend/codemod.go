@@ -2,11 +2,16 @@ package graphqlbackend
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"sync"
 
+	"github.com/opentracing-contrib/go-stdlib/nethttp"
+	"github.com/opentracing/opentracing-go"
 	otlog "github.com/opentracing/opentracing-go/log"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/internal/pkg/search"
@@ -14,42 +19,9 @@ import (
 	"github.com/sourcegraph/sourcegraph/pkg/env"
 	"github.com/sourcegraph/sourcegraph/pkg/errcode"
 	"github.com/sourcegraph/sourcegraph/pkg/trace"
+	"github.com/sourcegraph/sourcegraph/pkg/vcs/git"
+	"golang.org/x/net/context/ctxhttp"
 )
-
-// codemodSearchResultResolver is a resolver for the GraphQL type `CodemodSearchResult`
-type codemodSearchResultResolver struct {
-	commit      *gitCommitResolver
-	diffPreview *highlightedString
-	icon        string
-	label       string
-	url         string
-	detail      string
-	matches     []*searchResultMatchResolver
-}
-
-func (r *codemodSearchResultResolver) Codemod() *gitCodemodResolver       { return r.codemod }
-func (r *codemodSearchResultResolver) Refs() []*gitRefResolver            { return r.refs }
-func (r *codemodSearchResultResolver) SourceRefs() []*gitRefResolver      { return r.sourceRefs }
-func (r *codemodSearchResultResolver) MessagePreview() *highlightedString { return r.messagePreview }
-func (r *codemodSearchResultResolver) DiffPreview() *highlightedString    { return r.diffPreview }
-func (r *codemodSearchResultResolver) Icon() string {
-	return r.icon
-}
-func (r *codemodSearchResultResolver) Label() *markdownResolver {
-	return &markdownResolver{text: r.label}
-}
-
-func (r *codemodSearchResultResolver) URL() string {
-	return r.url
-}
-
-func (r *codemodSearchResultResolver) Detail() *markdownResolver {
-	return &markdownResolver{text: r.detail}
-}
-
-func (r *codemodSearchResultResolver) Matches() []*searchResultMatchResolver {
-	return r.matches
-}
 
 func callCodemod(ctx context.Context, args *search.Args) ([]*searchResultResolver, *searchResultsCommon, error) {
 	replacementValues, _ := args.Query.StringValues(query.FieldReplace)
@@ -68,27 +40,27 @@ func callCodemod(ctx context.Context, args *search.Args) ([]*searchResultResolve
 	var (
 		wg          sync.WaitGroup
 		mu          sync.Mutex
-		unflattened [][]*codemodSearchResultResolver
+		unflattened [][]*fileMatchResolver
 		common      = &searchResultsCommon{}
 	)
 	for _, repoRev := range args.Repos {
 		wg.Add(1)
 		go func(repoRev search.RepositoryRevisions) {
 			defer wg.Done()
-			results, repoLimitHit, repoTimedOut, searchErr := callCodemodInRepo(ctx, repoRev, args.Pattern, args.Query)
+			results, searchErr := callCodemodInRepo(ctx, repoRev, args.Pattern, args.Query, replacementText)
 			if ctx.Err() == context.Canceled {
 				// Our request has been canceled (either because another one of args.repos had a
 				// fatal error, or otherwise), so we can just ignore these results.
 				return
 			}
-			repoTimedOut = repoTimedOut || ctx.Err() == context.DeadlineExceeded
+			repoTimedOut := ctx.Err() == context.DeadlineExceeded
 			if searchErr != nil {
 				tr.LogFields(otlog.String("repo", string(repoRev.Repo.Name)), otlog.String("searchErr", searchErr.Error()), otlog.Bool("timeout", errcode.IsTimeout(searchErr)), otlog.Bool("temporary", errcode.IsTemporary(searchErr)))
 			}
 			mu.Lock()
 			defer mu.Unlock()
-			if fatalErr := handleRepoSearchResult(common, repoRev, repoLimitHit, repoTimedOut, searchErr); fatalErr != nil {
-				err = errors.Wrapf(searchErr, "failed to search codemod log %s", repoRev.String())
+			if fatalErr := handleRepoSearchResult(common, repoRev, false, repoTimedOut, searchErr); fatalErr != nil {
+				err = errors.Wrapf(searchErr, "failed to call codemod %s", repoRev.String())
 				cancel()
 			}
 			if len(results) > 0 {
@@ -101,46 +73,109 @@ func callCodemod(ctx context.Context, args *search.Args) ([]*searchResultResolve
 		return nil, nil, err
 	}
 
-	var flattened []*codemodSearchResultResolver
-	for _, results := range unflattened {
-		flattened = append(flattened, results...)
+	flattened := flattenFileMatches(unflattened, int(args.Pattern.FileMatchLimit))
+	results := make([]*searchResultResolver, len(flattened))
+	for i, fm := range flattened {
+		results[i] = &searchResultResolver{fileMatch: fm}
 	}
-	return codemodSearchResultsToSearchResults(flattened), common, nil
+	return results, common, nil
 }
 
-func codemodSearchResultsToSearchResults(results []*codemodSearchResultResolver) []*searchResultResolver {
-	// // Show most recent codemods first.
-	// sort.Slice(results, func(i, j int) bool {
-	// 	return results[i].codemod.author.Date() > results[j].codemod.author.Date()
-	// })
+var replacerURL = env.Get("REPLACER_URL", "http://replacer:3185", "replacer server URL")
 
-	results2 := make([]*searchResultResolver, len(results))
-	for i, result := range results {
-		results2[i] = &searchResultResolver{diff: result}
-	}
-	return results2
-}
-
-var replacerURL = env.Get("REPLACER_URL", "k8s+http://replacer:3185", "replacer server URL")
-
-func callCodemodInRepo(ctx context.Context, repoRevs search.RepositoryRevisions, info *search.PatternInfo, query *query.Query) (results []*codemodSearchResultResolver, limitHit, timedOut bool, err error) {
-	replacementValues, _ := args.Query.StringValues(query.FieldReplace)
-	replacementText := replacementValues[0]
-
+func callCodemodInRepo(ctx context.Context, repoRevs search.RepositoryRevisions, info *search.PatternInfo, query *query.Query, replacementText string) (results []*fileMatchResolver, err error) {
 	tr, ctx := trace.New(ctx, "callCodemodInRepo", fmt.Sprintf("repoRevs: %v, pattern %+v, replace: %+v", repoRevs, info.Pattern, replacementText))
 	defer func() {
-		tr.LazyPrintf("%d results, limitHit=%v, timedOut=%v", len(results), limitHit, timedOut)
+		tr.LazyPrintf("%d results", len(results))
 		tr.SetError(err)
 		tr.Finish()
 	}()
 
+	// Do not trigger a repo-updater lookup (e.g.,
+	// backend.{GitRepo,Repos.ResolveRev}) because that would slow this operation
+	// down by a lot (if we're looping over many repos). This means that it'll fail if a
+	// repo is not on gitserver.
+	commit, err := git.ResolveRevision(ctx, repoRevs.GitserverRepo(), nil, repoRevs.Revs[0].RevSpec, &git.ResolveRevisionOptions{NoEnsureRevision: true})
+	if err != nil {
+		return nil, err
+	}
+
 	u, err := url.Parse(replacerURL)
 	if err != nil {
-		return nil, false, false, err
+		return nil, err
 	}
-	u.Query.Set("repo", repoRevs.Repo.Name)
-	u.Query.Set("commit", repoRevs.Revs[0].RevSpec)
-	u.Query.Set("matchtemplate", op.info)
+	q := u.Query()
+	q.Set("repo", string(repoRevs.Repo.Name))
+	q.Set("commit", string(commit))
+	q.Set("matchtemplate", info.Pattern)
+	q.Set("rewritetemplate", replacementText)
+	q.Set("fileextension", ".go") // TODO!(sqs): un-hardcode
+	u.RawQuery = q.Encode()
+
+	log.Println("CODEMOD URL", u.String())
 	req, err := http.NewRequest("GET", u.String(), nil)
-	// http://127.0.0.1:3185/?repo=github.com/<repo>&commit=<commit>&matchtemplate=foo&rewritetemplate=bar&fileextension=.go
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+
+	req, ht := nethttp.TraceRequest(opentracing.GlobalTracer(), req,
+		nethttp.OperationName("Codemod client"),
+		nethttp.ClientTrace(false))
+	defer ht.Finish()
+
+	resp, err := ctxhttp.Do(ctx, searchHTTPClient, req)
+	if err != nil {
+		// If we failed due to cancellation or timeout (with no partial results in the response
+		// body), return just that.
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		}
+		return nil, errors.Wrap(err, "codemod request failed")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.WithStack(&searcherError{StatusCode: resp.StatusCode, Message: string(body)})
+	}
+
+	type rawCodemodResult struct {
+		URI                  string `json:"uri"`
+		RewrittenSource      string `json:"rewritten_source"`
+		InPlaceSubstitutions []struct {
+			Range struct {
+				Start struct{ Offset int64 }
+				End   struct{ Offset int64 }
+			}
+			ReplacementContent string `json:"replacement_content"`
+		} `json:"in_place_substitutions"`
+		Diff string
+	}
+	var rawResults []*rawCodemodResult
+	decoder := json.NewDecoder(resp.Body)
+	for decoder.More() {
+		var rawResult *rawCodemodResult
+		if err := decoder.Decode(&rawResult); err != nil {
+			return nil, errors.Wrap(err, "replacer response invalid")
+		}
+		if len(rawResult.InPlaceSubstitutions) == 0 {
+			continue
+		}
+		rawResults = append(rawResults, rawResult)
+	}
+	results = make([]*fileMatchResolver, len(rawResults))
+	for i, raw := range rawResults {
+
+		results[i] = &fileMatchResolver{
+			JPath:        raw.URI,
+			JLineMatches: nil, // TODO!(sqs)
+			uri:          fileMatchURI(repoRevs.Repo.Name, repoRevs.Revs[0].RevSpec, raw.URI),
+			repo:         repoRevs.Repo,
+			commitID:     commit,
+		}
+	}
+	return results, nil
 }

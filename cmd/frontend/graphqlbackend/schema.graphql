@@ -849,7 +849,7 @@ type Search {
 }
 
 # A search result.
-union SearchResult = FileMatch | CommitSearchResult | Repository
+union SearchResult = FileMatch | CommitSearchResult | Repository | CodemodResult
 
 # An object representing a markdown string.
 type Markdown {
@@ -873,6 +873,7 @@ interface GenericSearchResultInterface {
     # A list of matches in this search result.
     matches: [SearchResultMatch!]!
 }
+
 
 # A match in a search result. Matches make up the body content of a search result.
 type SearchResultMatch {
@@ -1042,6 +1043,23 @@ type CommitSearchResult implements GenericSearchResultInterface {
     # The matching portion of the diff, if any.
     diffPreview: HighlightedString
 }
+
+# The result of a code modification query.
+interface CodemodResult implements GenericSearchResultInterface {
+    # URL to an icon that is displayed with every search result.
+    icon: String!
+    # A markdown string that is rendered prominently.
+    label: Markdown!
+    # The URL of the result.
+    url: String!
+    # A markdown string that is rendered less prominently.
+    detail: Markdown!
+    # A list of matches in this search result.
+    matches: [SearchResultMatch!]!
+    # The diff that represents the modification.
+    diffPreview: HighlightedString!
+}
+
 
 # A search result that is a diff between two diffable Git objects.
 type DiffSearchResult {
