@@ -22,8 +22,18 @@ interface Props {
  */
 export const ThreadManagePage: React.FunctionComponent<Props> = ({ thread, ...props }) => (
     <div className="thread-manage-page">
-        <ThreadPullRequestTemplateEditForm {...props} thread={thread} />
-        <ThreadSettingsEditForm {...props} thread={thread} />
+        <div className="card d-block">
+            <h4 className="card-header">{upperFirst(nounForThreadKind(thread.kind))} pull request template</h4>
+            <div className="card-body">
+                <ThreadPullRequestTemplateEditForm {...props} thread={thread} />
+            </div>
+        </div>
+        <div className="card mt-3 d-block">
+            <h4 className="card-header">{upperFirst(nounForThreadKind(thread.kind))} settings</h4>
+            <div className="card-body">
+                <ThreadSettingsEditForm {...props} thread={thread} />
+            </div>
+        </div>
         <div className="card mt-5 d-inline-block">
             <h4 className="card-header">{upperFirst(nounForThreadKind(thread.kind))} actions</h4>
             <div className="card-body">

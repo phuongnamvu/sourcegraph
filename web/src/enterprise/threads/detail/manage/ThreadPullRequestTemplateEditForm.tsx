@@ -11,7 +11,7 @@ import { queryFindAndReplaceOptions } from '../../../codemod/query'
 import { ThreadSettings } from '../../settings'
 
 interface Props {
-    thread: Pick<GQL.IDiscussionThread, 'id' | 'settings'>
+    thread: Pick<GQL.IDiscussionThread, 'id' | 'title' | 'settings'>
     onThreadUpdate: (thread: GQL.IDiscussionThread | ErrorLike) => void
     threadSettings: ThreadSettings
 }
@@ -24,11 +24,12 @@ export const ThreadPullRequestTemplateEditForm: React.FunctionComponent<Props> =
     onThreadUpdate,
     threadSettings,
 }) => {
-    const query = threadSettings.query
-    const { find, replace } = queryFindAndReplaceOptions(query)
-
-    const titlePlaceholder = `${find} 🠖 ${replace} (Sourcegraph codemod)`
-    const branchPlaceholder = 'codemod/' + [find, replace].map(v => v.replace(/[^\w]+/g, '_')).join('-')
+    // const query = threadSettings.query
+    // const { find, replace } = queryFindAndReplaceOptions(query)
+    // const titlePlaceholder = `${find} 🠖 ${replace} (Sourcegraph codemod)`
+    // const branchPlaceholder = 'codemod/' + [find, replace].map(v => v.replace(/[^\w]+/g, '_')).join('-')
+    const titlePlaceholder = `${thread.title} (Sourcegraph codemod)`
+    const branchPlaceholder = `codemod/${thread.title.replace(/[^\w]+/g, '_')}`
 
     const [uncommittedSettings, setUncommittedSettings] = useState<ThreadSettings>({
         ...threadSettings,
@@ -149,14 +150,20 @@ export const ThreadPullRequestTemplateEditForm: React.FunctionComponent<Props> =
                             </code>
                         </small>
                     </div>
-                    <button type="submit" className="btn btn-primary" disabled={updateOrError === LOADING}>
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={updateOrError === LOADING}
+                        aria-describedby="thread-pull-request-template-edit-form__button-help"
+                    >
                         {updateOrError === LOADING ? (
                             <LoadingSpinner className="icon-inline" />
                         ) : (
                             <SourcePullIcon className="icon-inline" />
                         )}{' '}
-                        Create pull requests
+                        Save pull request template
                     </button>
+                    <small id="thread-pull-request-template-edit-form__button-help" className="form-text text-muted" />
                     {isErrorLike(updateOrError) && (
                         <div className="alert alert-danger mt-3">{updateOrError.message}</div>
                     )}
