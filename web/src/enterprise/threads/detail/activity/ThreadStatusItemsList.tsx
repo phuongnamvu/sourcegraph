@@ -1,8 +1,6 @@
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import H from 'history'
-import AlertOutlineIcon from 'mdi-react/AlertOutlineIcon'
 import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
-import CheckIcon from 'mdi-react/CheckIcon'
 import CloseCircleIcon from 'mdi-react/CloseCircleIcon'
 import SourcePullIcon from 'mdi-react/SourcePullIcon'
 import React, { useMemo, useState } from 'react'
@@ -11,13 +9,16 @@ import * as GQL from '../../../../../../shared/src/graphql/schema'
 import { asError, ErrorLike, isErrorLike } from '../../../../../../shared/src/util/errors'
 import { PullRequestStatusItem } from './PullRequestStatusItem'
 import { ThreadStatusItemsListHeaderFilterButtonDropdown } from './ThreadStatusItemsListHeaderFilterButtonDropdown'
+import { ThreadStatusItemsProgressBar } from './ThreadStatusItemsProgressBar'
 
 const DATA: {
     repo: string
+    label?: string
     prNumber: number
     status: 'open' | 'merged' | 'closed'
     updatedAt: string
     updatedBy: string
+    commentsCount: number
 }[] = [
     {
         repo: 'github.com/sourcegraph/go-diff',
@@ -25,13 +26,25 @@ const DATA: {
         status: 'open',
         updatedAt: new Date(Date.now() - 10000000).toISOString(),
         updatedBy: 'alice',
+        commentsCount: 1,
     },
     {
         repo: 'github.com/sourcegraph/codeintellify',
+        label: 'client/chrome/',
         prNumber: 1841,
         status: 'open',
         updatedAt: new Date(Date.now() - 5000000).toISOString(),
-        updatedBy: 'ziyang',
+        updatedBy: 'lguychard',
+        commentsCount: 7,
+    },
+    {
+        repo: 'github.com/sourcegraph/codeintellify',
+        label: 'client/firefox/',
+        prNumber: 1842,
+        status: 'open',
+        updatedAt: new Date(Date.now() - 2300000).toISOString(),
+        updatedBy: 'felixfbecker',
+        commentsCount: 2,
     },
     {
         repo: 'github.com/sourcegraph/csp',
@@ -39,6 +52,7 @@ const DATA: {
         status: 'closed',
         updatedAt: new Date(Date.now() - 9300000).toISOString(),
         updatedBy: 'peter91',
+        commentsCount: 5,
     },
     {
         repo: 'github.com/sourcegraph/sitemap',
@@ -46,6 +60,7 @@ const DATA: {
         status: 'closed',
         updatedAt: new Date(Date.now() - 4100000).toISOString(),
         updatedBy: 'carol',
+        commentsCount: 0,
     },
     {
         repo: 'github.com/sourcegraph/sourcegraph-lightstep',
@@ -53,13 +68,25 @@ const DATA: {
         status: 'merged',
         updatedAt: new Date(Date.now() - 7100000).toISOString(),
         updatedBy: 'tsenart',
+        commentsCount: 1,
     },
     {
         repo: 'github.com/sourcegraph/docsite',
+        label: 'cmd/docsite/',
         prNumber: 149,
         status: 'merged',
-        updatedAt: new Date(Date.now() - 3500000).toISOString(),
+        updatedAt: new Date(Date.now() - 5500000).toISOString(),
         updatedBy: 'felixfbecker',
+        commentsCount: 5,
+    },
+    {
+        repo: 'github.com/sourcegraph/docsite',
+        label: 'pkg/markdown/',
+        prNumber: 150,
+        status: 'merged',
+        updatedAt: new Date(Date.now() - 3500000).toISOString(),
+        updatedBy: 'ryan-blunden',
+        commentsCount: 2,
     },
     {
         repo: 'github.com/sourcegraph/thyme',
@@ -67,6 +94,7 @@ const DATA: {
         status: 'merged',
         updatedAt: new Date(Date.now() - 100000).toISOString(),
         updatedBy: 'beyang',
+        commentsCount: 21,
     },
     {
         repo: 'github.com/sourcegraph/sourcegraph-git-extras',
@@ -74,6 +102,7 @@ const DATA: {
         status: 'merged',
         updatedAt: new Date(Date.now() - 6200000).toISOString(),
         updatedBy: 'xyzhao',
+        commentsCount: 2,
     },
 ]
 
@@ -109,20 +138,21 @@ export const ThreadStatusItemsList: React.FunctionComponent<Props> = ({ thread: 
         <div className="thread-status-items-list">
             <div className="card">
                 <div className="card-header d-flex align-items-center justify-content-between">
-                    <div className="form-thread mx-2">
-                        <input className="form-thread-input position-static" type="checkbox" aria-label="Select item" />
+                    <div className="form-check mx-2">
+                        <input className="form-check-input position-static" type="checkbox" aria-label="Select item" />
                     </div>
                     <div className="font-weight-normal flex-1">
+                        50% complete&nbsp;&nbsp;
                         <SourcePullIcon className="icon-inline" />{' '}
                         {itemsOrError !== LOADING && !isErrorLike(itemsOrError)
                             ? `${itemsOrError.nodes.filter(({ status }) => status === 'open').length} open`
                             : 'Open'}{' '}
-                        &nbsp;
+                        &nbsp;&nbsp;
                         <CheckCircleIcon className="icon-inline" />{' '}
                         {itemsOrError !== LOADING && !isErrorLike(itemsOrError)
                             ? `${itemsOrError.nodes.filter(({ status }) => status === 'merged').length} merged`
                             : 'Merged'}{' '}
-                        &nbsp;
+                        &nbsp;&nbsp;
                         <CloseCircleIcon className="icon-inline" />{' '}
                         {itemsOrError !== LOADING && !isErrorLike(itemsOrError)
                             ? `${itemsOrError.nodes.filter(({ status }) => status === 'closed').length} closed`
@@ -143,6 +173,7 @@ export const ThreadStatusItemsList: React.FunctionComponent<Props> = ({ thread: 
                         </ThreadStatusItemsListHeaderFilterButtonDropdown>
                     </div>
                 </div>
+                <ThreadStatusItemsProgressBar />
                 {itemsOrError === LOADING ? (
                     <LoadingSpinner className="mt-2" />
                 ) : isErrorLike(itemsOrError) ? (

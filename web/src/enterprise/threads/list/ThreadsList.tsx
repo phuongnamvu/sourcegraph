@@ -45,8 +45,8 @@ export const ThreadsList: React.FunctionComponent<Props> = ({ kind, query, onQue
             <ThreadsListHeader {...props} kind={kind} query={query} onQueryChange={onQueryChange} />
             <div className="card">
                 <div className="card-header d-flex align-items-center justify-content-between">
-                    <div className="form-thread mx-2">
-                        <input className="form-thread-input position-static" type="checkbox" aria-label="Select item" />
+                    <div className="form-check mx-2">
+                        <input className="form-check-input position-static" type="checkbox" aria-label="Select item" />
                     </div>
                     <div className="font-weight-normal flex-1">
                         <strong>

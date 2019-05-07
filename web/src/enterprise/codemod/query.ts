@@ -1,4 +1,4 @@
-import { quoteIfNeeded } from '../search'
+import { quoteIfNeeded } from '../../search'
 
 export function queryFindAndReplaceOptions(query: string): { find: string; replace: string } {
     // TODO!(sqs): hacky

@@ -17,11 +17,11 @@ export const ThreadsListItem: React.FunctionComponent<Props> = ({ thread, locati
     <li className="list-group-item p-2">
         <div className="d-flex align-items-start">
             <div
-                className="form-thread mx-2"
+                className="form-check mx-2"
                 /* tslint:disable-next-line:jsx-ban-props */
                 style={{ marginTop: '2px' /* stylelint-disable-line declaration-property-unit-whitelist */ }}
             >
-                <input className="form-thread-input position-static" type="checkbox" aria-label="Select item" />
+                <input className="form-check-input position-static" type="checkbox" aria-label="Select item" />
             </div>
             <CheckboxMultipleBlankOutlineIcon
                 className={`icon-inline small mr-2 mt-1 ${threadIconColorClass(thread)}`}

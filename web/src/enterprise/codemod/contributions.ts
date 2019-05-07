@@ -1,8 +1,11 @@
 import H from 'history'
 import { Subscription, Unsubscribable } from 'rxjs'
-import { ContributableMenu } from '../../../shared/src/api/protocol'
-import { TabsWithURLViewStatePersistence } from '../../../shared/src/components/Tabs'
-import { ExtensionsControllerProps } from '../../../shared/src/extensions/controller'
+import { ContributableMenu } from '../../../../shared/src/api/protocol'
+import { TabsWithURLViewStatePersistence } from '../../../../shared/src/components/Tabs'
+import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
+import * as GQL from '../../../../shared/src/graphql/schema'
+import { createThread } from '../../discussions/backend'
+import { parseSearchURLQuery } from '../../search'
 import { queryWithReplacementText } from './query'
 
 /**
@@ -14,8 +17,6 @@ import { queryWithReplacementText } from './query'
 const USE_CODEMOD = localStorage.getItem('codemodExp') !== null
 
 export const CODEMOD_PANEL_VIEW_ID = 'codemod'
-
-const REPLACE_ID = 'codemod.search.replace'
 
 export function registerCodemodContributions({
     history,
@@ -29,6 +30,7 @@ export function registerCodemodContributions({
 
     const subscriptions = new Subscription()
 
+    const REPLACE_ID = 'codemod.search.replace'
     subscriptions.add(
         extensionsController.services.commands.registerCommand({
             command: REPLACE_ID,
@@ -45,7 +47,6 @@ export function registerCodemodContributions({
             },
         })
     )
-
     subscriptions.add(
         extensionsController.services.contribution.registerContributions({
             contributions: {
@@ -65,6 +66,49 @@ export function registerCodemodContributions({
                 ],
                 menus: {
                     [ContributableMenu.SearchResultsToolbar]: [{ action: REPLACE_ID }],
+                },
+            },
+        })
+    )
+
+    const SAVE_ID = 'codemod.search.saveAsCheck'
+    subscriptions.add(
+        extensionsController.services.commands.registerCommand({
+            command: SAVE_ID,
+            run: async () => {
+                const title = prompt('Enter title to create codemod:')
+                if (title !== null) {
+                    const query = parseSearchURLQuery(history.location.search)
+                    const thread = await createThread({
+                        title,
+                        kind: GQL.DiscussionThreadKind.CODEMOD,
+                        settings: JSON.stringify({ query }),
+                        contents: '',
+                    }).toPromise()
+                    history.push(thread.url)
+                }
+            },
+        })
+    )
+    subscriptions.add(
+        extensionsController.services.contribution.registerContributions({
+            contributions: {
+                actions: [
+                    {
+                        id: SAVE_ID,
+                        title: 'Create from query',
+                        category: 'Codemod',
+                        command: SAVE_ID,
+                        actionItem: {
+                            label: 'Create codemod',
+                            // TODO!(sqs): icon theme color doesn't update
+                            iconURL:
+                                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' style='width:24px;height:24px' viewBox='0 0 24 24' fill='transparent'%3E%3Cpath d='M20,16V10H22V16C22,17.1 21.1,18 20,18H8C6.89,18 6,17.1 6,16V4C6,2.89 6.89,2 8,2H16V4H8V16H20M10.91,7.08L14,10.17L20.59,3.58L22,5L14,13L9.5,8.5L10.91,7.08M16,20V22H4C2.9,22 2,21.1 2,20V7H4V20H16Z'%3E%3C/path%3E%3C/svg%3E",
+                        },
+                    },
+                ],
+                menus: {
+                    [ContributableMenu.SearchResultsToolbar]: [{ action: SAVE_ID }],
                 },
             },
         })
