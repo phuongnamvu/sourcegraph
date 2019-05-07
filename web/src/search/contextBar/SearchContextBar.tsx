@@ -1,94 +1,103 @@
 import H from 'history'
 import React from 'react'
-import { ContributableMenu } from '../../../../shared/src/api/protocol'
+import { ContributableMenu, SearchFilters } from '../../../../shared/src/api/protocol'
+import { RepositoryIcon } from '../../../../shared/src/components/icons'
+import { displayRepoName } from '../../../../shared/src/components/RepoFileLink'
 import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
+import * as GQL from '../../../../shared/src/graphql/schema'
 import { PlatformContextProps } from '../../../../shared/src/platform/context'
 import { TelemetryProps } from '../../../../shared/src/telemetry/telemetryService'
 import { WebActionsNavItems as ActionsNavItems } from '../../components/shared'
 import { FilterChip } from '../FilterChip'
+import { SearchScopeWithOptionalName } from '../results/SearchResultsFilterBars'
 
 interface Props
     extends ExtensionsControllerProps<'executeCommand' | 'services'>,
         PlatformContextProps<'forceUpdateTooltip'>,
         TelemetryProps {
+    results?: Pick<GQL.ISearchResults, 'dynamicFilters'>
+    navbarSearchQuery: string
+    filters: SearchScopeWithOptionalName[]
+    extensionFilters: SearchFilters[] | undefined
+    onFilterClick: (value: string) => void
+
     className?: string
     location: H.Location
 }
 
-export const SearchContextBar: React.FunctionComponent<Props> = ({ className = '', ...props }) => (
+export const SearchContextBar: React.FunctionComponent<Props> = ({
+    results,
+    navbarSearchQuery,
+    filters,
+    extensionFilters,
+    onFilterClick,
+    className = '',
+    ...props
+}) => (
     <nav className={`search-context-bar border-right ${className}`}>
-        <section className="card border-0 rounded-0">
-            <h5 className="card-header rounded-0">Repositories</h5>
-            <ul className="list-group list-group-flush mt-1">
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="/sourcegraph/sourcegr" value="a" query="a" />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="sourcegraph/sourcegraph" value="_" query="a" count={93} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="sourcegraph/go-diff" value="_" query="a" count={19} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="sourcegraph/infrastructure" value="_" query="a" count={15} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="theupdateframework/notary" value="_" query="a" count={11} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="twbs/bootstrap" value="_" query="a" count={7} />
-                </li>
-            </ul>
-        </section>
-        <section className="card border-0 rounded-0 mt-3">
-            <h5 className="card-header rounded-0">Languages</h5>
-            <ul className="list-group list-group-flush mt-1">
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="typescript" value="_" query="a" count={38} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="go" value="_" query="a" count={19} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="scss" value="_" query="a" count={7} />
-                </li>
-            </ul>
-        </section>
-        <section className="card border-0 rounded-0 mt-3">
-            <h5 className="card-header rounded-0">Owners</h5>
-            <ul className="list-group list-group-flush mt-1">
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="@tsenart" value="_" query="a" count={23} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="@felixfbecker" value="_" query="a" count={16} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="@beyang" value="_" query="a" count={7} />
-                </li>
-            </ul>
-        </section>
-        <section className="card border-0 rounded-0 mt-3">
-            <h5 className="card-header rounded-0">Updated</h5>
-            <ul className="list-group list-group-flush mt-1">
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="Last 24 hours" value="_" query="a" count={3} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="Last 7 days" value="_" query="a" count={18} />
-                </li>
-                <li className="list-group-item border-0 py-0">
-                    <FilterChip name="More than 1 year ago" value="_" query="a" count={83} />
-                </li>
-            </ul>
-        </section>
-        <section className="border-top mt-3 pt-1">
-            <ActionsNavItems
-                {...props}
-                menu={ContributableMenu.SearchResultsToolbar}
-                wrapInList={true}
-                actionItemClass="nav-link px-2"
-            />
-        </section>
+        {results && (
+            <>
+                <section className="card border-0 rounded-0">
+                    <h5 className="card-header rounded-0">Repositories</h5>
+                    <ul className="list-group list-group-flush mt-1">
+                        {results &&
+                            results.dynamicFilters
+                                .filter(filter => filter.kind === 'repo' && filter.value !== '')
+                                .map((filter, i) => (
+                                    <li key={i} className="list-group-item border-0 py-0">
+                                        <FilterChip
+                                            name={displayRepoName(filter.label)}
+                                            query={navbarSearchQuery}
+                                            onFilterChosen={onFilterClick}
+                                            key={filter.value}
+                                            value={filter.value}
+                                            count={filter.count}
+                                            limitHit={filter.limitHit}
+                                        />
+                                    </li>
+                                ))}
+                    </ul>
+                </section>
+                <section className="card border-0 rounded-0 mt-2">
+                    <h5 className="card-header rounded-0">Filters</h5>
+                    <ul className="list-group list-group-flush mt-1">
+                        {extensionFilters &&
+                            extensionFilters
+                                .filter(filter => filter.value !== '')
+                                .map((filter, i) => (
+                                    <li key={i} className="list-group-item border-0 py-0">
+                                        <FilterChip
+                                            query={navbarSearchQuery}
+                                            onFilterChosen={onFilterClick}
+                                            value={filter.value}
+                                            name={filter.name}
+                                        />
+                                    </li>
+                                ))}
+                        {filters
+                            .filter(filter => filter.value !== '')
+                            .map((filter, i) => (
+                                <li key={i} className="list-group-item border-0 py-0">
+                                    <FilterChip
+                                        query={navbarSearchQuery}
+                                        onFilterChosen={onFilterClick}
+                                        key={filter.name + filter.value}
+                                        value={filter.value}
+                                        name={filter.name}
+                                    />
+                                </li>
+                            ))}
+                    </ul>
+                </section>
+                <section className="border-top mt-3 pt-1">
+                    <ActionsNavItems
+                        {...props}
+                        menu={ContributableMenu.SearchResultsToolbar}
+                        wrapInList={true}
+                        actionItemClass="nav-link px-2"
+                    />
+                </section>
+            </>
+        )}
     </nav>
 )

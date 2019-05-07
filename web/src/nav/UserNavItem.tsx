@@ -55,6 +55,12 @@ export class UserNavItem extends React.PureComponent<Props, State> {
                     <Link to={this.props.authenticatedUser.settingsURL!} className="dropdown-item">
                         Settings
                     </Link>
+                    <Link to="/codemods" className="dropdown-item">
+                        Codemods
+                    </Link>
+                    <Link to="/search/searches" className="dropdown-item">
+                        Watches
+                    </Link>
                     <Link to="/extensions" className="dropdown-item">
                         Extensions
                     </Link>
@@ -63,9 +69,6 @@ export class UserNavItem extends React.PureComponent<Props, State> {
                             Discussions
                         </Link>
                     )}
-                    <Link to="/search/searches" className="dropdown-item">
-                        Saved searches
-                    </Link>
                     <DropdownItem divider={true} />
                     <div className="px-2 py-1">
                         <div className="d-flex align-items-center">

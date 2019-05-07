@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -164,10 +163,8 @@ func callCodemodInRepo(ctx context.Context, repoRevs search.RepositoryRevisions,
 	q.Set("commit", string(commit))
 	q.Set("matchtemplate", matchPattern)
 	q.Set("rewritetemplate", replacementText)
-	q.Set("fileextension", ".go") // TODO!(sqs): un-hardcode
 	u.RawQuery = q.Encode()
 
-	log.Println("CODEMOD URL", u.String())
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, err

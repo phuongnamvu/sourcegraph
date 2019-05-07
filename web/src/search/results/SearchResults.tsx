@@ -193,7 +193,16 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
                             handlePosition="right"
                             storageKey="search-context-bar-resizable"
                             defaultSize={200}
-                            element={<SearchContextBar {...this.props} className="flex-1 overflow-auto" />}
+                            element={
+                                <SearchContextBar
+                                    {...this.props}
+                                    results={this.state.resultsOrError}
+                                    filters={filters}
+                                    extensionFilters={extensionFilters}
+                                    onFilterClick={this.onDynamicFilterClicked}
+                                    className="flex-1 overflow-auto"
+                                />
+                            }
                         />
                     )}
                     <SearchResultsList
