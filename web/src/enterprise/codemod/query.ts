@@ -14,5 +14,7 @@ export function queryFindAndReplaceOptions(query: string): { find: string; repla
 }
 
 export function queryWithReplacementText(query: string, replace: string): string {
-    return `${query.slice(0, query.indexOf(' replace:'))} replace:${quoteIfNeeded(replace)}`
+    return `${query.includes('replace:') ? query.slice(0, query.indexOf(' replace:')) : query} replace:${quoteIfNeeded(
+        replace
+    )}`
 }
