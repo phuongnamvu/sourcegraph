@@ -1,7 +1,7 @@
 import classNames from 'classnames'
 import formatDistance from 'date-fns/formatDistance'
-import AlertCircleIcon from 'mdi-react/AlertCircleIcon'
-import CheckIcon from 'mdi-react/CheckIcon'
+import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
+import CloseCircleIcon from 'mdi-react/CloseCircleIcon'
 import SourcePullIcon from 'mdi-react/SourcePullIcon'
 import React from 'react'
 import { displayRepoName } from '../../../../../../shared/src/components/RepoFileLink'
@@ -12,13 +12,14 @@ interface Props {
     prNumber: number
     status: 'open' | 'merged' | 'closed'
     updatedAt: string
+    updatedBy: string
     className?: string
 }
 
 const STATUS_ICONS: Record<Props['status'], React.ComponentType<{ className?: string }>> = {
     open: SourcePullIcon,
-    merged: CheckIcon,
-    closed: AlertCircleIcon,
+    merged: CheckCircleIcon,
+    closed: CloseCircleIcon,
 }
 
 /**
@@ -29,11 +30,12 @@ export const PullRequestStatusItem: React.FunctionComponent<Props> = ({
     prNumber,
     status,
     updatedAt,
+    updatedBy,
     className = '',
 }) => {
     const Icon = STATUS_ICONS[status]
     return (
-        <div className={`${className} d-flex align-items-center`}>
+        <div className={`${className} d-flex align-items-start`}>
             <Icon
                 className={classNames('icon-inline', 'mr-2', 'h5', 'mb-0', {
                     'text-info': status === 'open',
@@ -41,11 +43,17 @@ export const PullRequestStatusItem: React.FunctionComponent<Props> = ({
                     'text-danger': status === 'closed',
                 })}
             />
-            <a href={`https://${repo}/pulls/${prNumber}`} target="_blank">
-                {displayRepoName(repo)}
-                <strong>#{prNumber}</strong>
-            </a>
-            {formatDistance(Date.parse(updatedAt), Date.now())}
+            <div>
+                <div>
+                    <a href={`https://${repo}/pull/${prNumber}`} target="_blank">
+                        {displayRepoName(repo)}
+                        <strong>#{prNumber}</strong>
+                    </a>
+                </div>
+                <small className="text-muted">
+                    Updated {formatDistance(Date.parse(updatedAt), Date.now())} ago by <strong>{updatedBy}</strong>
+                </small>
+            </div>
         </div>
     )
 }
