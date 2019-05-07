@@ -44,7 +44,7 @@ export const ThreadAreaHeader: React.FunctionComponent<Props> = ({
                         exact={true}
                     >
                         <HistoryIcon className="icon-inline" /> Activity{' '}
-                        {threadSettings.pullRequestTemplate && <span className="badge badge-secondary">50%</span>}
+                        {threadSettings.createPullRequests && <span className="badge badge-secondary">50%</span>}
                     </NavLink>
                     <NavLink
                         to={`${areaURL}/manage`}

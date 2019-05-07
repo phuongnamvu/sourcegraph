@@ -32,23 +32,22 @@ export const ThreadOverviewPage: React.FunctionComponent<Props> = ({
     ...props
 }) => (
     <div className="thread-overview-page">
-        {threadSettings.pullRequestTemplate ? (
-            <>
-                <div className="d-flex align-items-center position-relative mb-3 border rounded">
-                    <Link to={`${thread.url}/activity`} className="stretched-link" />
-                    <ThreadStatusItemsProgressBar className="flex-1 rounded" height="1.25rem" label="50% complete" />
-                </div>
-                <DiscussionsThread {...props} threadID={thread.id} className="border border-top-0 rounded" />
-            </>
+        {threadSettings.createPullRequests ? (
+            <div className="d-flex align-items-center position-relative mb-3 border rounded">
+                <Link to={`${thread.url}/activity`} className="stretched-link" />
+                <ThreadStatusItemsProgressBar className="flex-1 rounded" height="1.25rem" label="50% complete" />
+            </div>
         ) : (
-            <div className="border rounded p-3">
-                <h2>Create pull request template</h2>
-                <ThreadPullRequestTemplateEditForm
-                    thread={thread}
-                    onThreadUpdate={onThreadUpdate}
-                    threadSettings={threadSettings}
-                />
+            <div className="alert alert-info mb-3 position-relative">
+                <Link
+                    to={`${thread.url}/activity`}
+                    className="stretched-link font-weight-bold"
+                    style={{ color: 'var(--body-color)' }}
+                >
+                    10 pull requests pending
+                </Link>
             </div>
         )}
+        <DiscussionsThread {...props} threadID={thread.id} className="border border-top-0 rounded" />
     </div>
 )

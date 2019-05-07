@@ -40,7 +40,7 @@ export function registerCodemodContributions({
                     const params = new URLSearchParams(history.location.search)
                     params.set('q', queryWithReplacementText(params.get('q') || '', text))
                     history.push({
-                        ...TabsWithURLViewStatePersistence.urlForTabID(history.location, CODEMOD_PANEL_VIEW_ID),
+                        // ...TabsWithURLViewStatePersistence.urlForTabID(history.location, CODEMOD_PANEL_VIEW_ID),
                         search: `${params}`,
                     })
                 }
@@ -85,7 +85,7 @@ export function registerCodemodContributions({
                         settings: JSON.stringify({ query }),
                         contents: 'Created codemod',
                     }).toPromise()
-                    history.push(thread.url)
+                    setTimeout(() => history.push(`${thread.url}/activity`), 500)
                 }
             },
         })

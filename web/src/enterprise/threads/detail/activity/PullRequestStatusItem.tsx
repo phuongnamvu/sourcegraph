@@ -3,17 +3,19 @@ import formatDistance from 'date-fns/formatDistance'
 import { upperFirst } from 'lodash'
 import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
 import CloseCircleIcon from 'mdi-react/CloseCircleIcon'
+import DotsHorizontalCircleIcon from 'mdi-react/DotsHorizontalCircleIcon'
 import MessageOutlineIcon from 'mdi-react/MessageOutlineIcon'
 import SourcePullIcon from 'mdi-react/SourcePullIcon'
 import React from 'react'
 import { displayRepoName } from '../../../../../../shared/src/components/RepoFileLink'
 import * as GQL from '../../../../../../shared/src/graphql/schema'
+import { pluralize } from '../../../../../../shared/src/util/strings'
 
 interface Props {
     repo: string
     label?: string
     prNumber: number
-    status: 'open' | 'merged' | 'closed'
+    status: 'open' | 'merged' | 'closed' | 'pending'
     updatedAt: string
     updatedBy: string
     commentsCount: number
@@ -24,6 +26,7 @@ const STATUS_ICONS: Record<Props['status'], React.ComponentType<{ className?: st
     open: SourcePullIcon,
     merged: CheckCircleIcon,
     closed: CloseCircleIcon,
+    pending: DotsHorizontalCircleIcon,
 }
 
 /**
@@ -55,6 +58,7 @@ export const PullRequestStatusItem: React.FunctionComponent<Props> = ({
                         'text-info': status === 'open',
                         'text-success': status === 'merged',
                         'text-danger': status === 'closed',
+                        'text-warning': status === 'pending',
                     })}
                     data-tooltip={upperFirst(status)}
                 />
@@ -76,21 +80,33 @@ export const PullRequestStatusItem: React.FunctionComponent<Props> = ({
                             )}
                         </a>
                     </h3>
-                    <small className="text-muted">
-                        #{prNumber} updated {formatDistance(Date.parse(updatedAt), Date.now())} ago by{' '}
-                        <strong>{updatedBy}</strong>
-                    </small>
+                    {status === 'pending' ? (
+                        <small className="text-muted">
+                            {commentsCount} {pluralize('line', commentsCount)} changed
+                        </small>
+                    ) : (
+                        <small className="text-muted">
+                            #{prNumber} updated {formatDistance(Date.parse(updatedAt), Date.now())} ago by{' '}
+                            <strong>{updatedBy}</strong>
+                        </small>
+                    )}
                 </div>
                 <div>
-                    <ul className="list-inline d-flex align-items-center">
-                        {commentsCount > 0 && (
-                            <li className="list-inline-item">
-                                <small className="text-muted">
-                                    <MessageOutlineIcon className="icon-inline" /> {commentsCount}
-                                </small>
-                            </li>
-                        )}
-                    </ul>
+                    {status === 'pending' ? (
+                        <button type="button" className="btn btn-outline-success">
+                            Create PR
+                        </button>
+                    ) : (
+                        commentsCount > 0 && (
+                            <ul className="list-inline d-flex align-items-center">
+                                <li className="list-inline-item">
+                                    <small className="text-muted">
+                                        <MessageOutlineIcon className="icon-inline" /> {commentsCount}
+                                    </small>
+                                </li>
+                            </ul>
+                        )
+                    )}
                 </div>
             </div>
         </div>

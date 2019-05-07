@@ -451,11 +451,11 @@ export class SearchResultsList extends React.PureComponent<SearchResultsListProp
                     )}
 
                     <div className="pb-4" />
-                    {this.props.resultsOrError !== undefined && (
+                    {/* TODO!(sqs) {this.props.resultsOrError !== undefined && (
                         <Link className="mb-4 p-3" to="/help/user/search">
                             Not seeing expected results?
                         </Link>
-                    )}
+                    )}*/}
                 </div>
             </React.Fragment>
         )

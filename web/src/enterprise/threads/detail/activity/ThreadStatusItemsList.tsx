@@ -1,5 +1,4 @@
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
-import H from 'history'
 import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
 import CloseCircleIcon from 'mdi-react/CloseCircleIcon'
 import SourcePullIcon from 'mdi-react/SourcePullIcon'
@@ -7,6 +6,7 @@ import React, { useMemo, useState } from 'react'
 import { of } from 'rxjs'
 import * as GQL from '../../../../../../shared/src/graphql/schema'
 import { asError, ErrorLike, isErrorLike } from '../../../../../../shared/src/util/errors'
+import { ThreadSettings } from '../../settings'
 import { PullRequestStatusItem } from './PullRequestStatusItem'
 import { ThreadStatusItemsListHeaderFilterButtonDropdown } from './ThreadStatusItemsListHeaderFilterButtonDropdown'
 import { ThreadStatusItemsProgressBar } from './ThreadStatusItemsProgressBar'
@@ -15,11 +15,19 @@ const DATA: {
     repo: string
     label?: string
     prNumber: number
-    status: 'open' | 'merged' | 'closed'
+    status: 'open' | 'merged' | 'closed' | 'pending'
     updatedAt: string
     updatedBy: string
     commentsCount: number
 }[] = [
+    {
+        repo: 'github.com/sourcegraph/sourcegraph',
+        prNumber: 2319,
+        status: 'pending',
+        updatedAt: new Date(Date.now() - 3900000).toISOString(),
+        updatedBy: 'jason',
+        commentsCount: 73,
+    },
     {
         repo: 'github.com/sourcegraph/go-diff',
         prNumber: 87,
@@ -106,13 +114,17 @@ const DATA: {
     },
 ]
 
-const queryStatusItems = (_threadID: string) => of({ nodes: DATA, totalCount: DATA.length })
+const queryStatusItems = (_threadID: string, createPullRequests?: boolean) =>
+    of({
+        nodes: createPullRequests ? DATA : DATA.map(d => ({ ...d, status: 'pending' as const })),
+        totalCount: DATA.length,
+    })
 
 interface Props {
     thread: Pick<GQL.IDiscussionThread, 'id'>
+    threadSettings: ThreadSettings
 
-    history: H.History
-    location: H.Location
+    action?: React.ReactFragment
 }
 
 const LOADING: 'loading' = 'loading'
@@ -120,7 +132,11 @@ const LOADING: 'loading' = 'loading'
 /**
  * The list of thread status items.
  */
-export const ThreadStatusItemsList: React.FunctionComponent<Props> = ({ thread: { id: threadID } }) => {
+export const ThreadStatusItemsList: React.FunctionComponent<Props> = ({
+    thread: { id: threadID },
+    threadSettings,
+    action,
+}) => {
     const [itemsOrError, setThreadsOrError] = useState<
         typeof LOADING | { nodes: typeof DATA; totalCount: number } | ErrorLike
     >(LOADING)
@@ -128,7 +144,7 @@ export const ThreadStatusItemsList: React.FunctionComponent<Props> = ({ thread: 
     // tslint:disable-next-line: no-floating-promises because queryStatusItems never throws
     useMemo(async () => {
         try {
-            setThreadsOrError(await queryStatusItems(threadID).toPromise())
+            setThreadsOrError(await queryStatusItems(threadID, threadSettings.createPullRequests).toPromise())
         } catch (err) {
             setThreadsOrError(asError(err))
         }
@@ -142,7 +158,7 @@ export const ThreadStatusItemsList: React.FunctionComponent<Props> = ({ thread: 
                         <input className="form-check-input position-static" type="checkbox" aria-label="Select item" />
                     </div>
                     <div className="font-weight-normal flex-1">
-                        50% complete&nbsp;&nbsp;
+                        {threadSettings.createPullRequests ? '50%' : '0%'} complete&nbsp;&nbsp;
                         <SourcePullIcon className="icon-inline" />{' '}
                         {itemsOrError !== LOADING && !isErrorLike(itemsOrError)
                             ? `${itemsOrError.nodes.filter(({ status }) => status === 'open').length} open`
@@ -158,7 +174,7 @@ export const ThreadStatusItemsList: React.FunctionComponent<Props> = ({ thread: 
                             ? `${itemsOrError.nodes.filter(({ status }) => status === 'closed').length} closed`
                             : 'Closed'}{' '}
                     </div>
-                    <div>
+                    <div className="d-flex">
                         <ThreadStatusItemsListHeaderFilterButtonDropdown
                             header="Filter by who's assigned"
                             items={['sqs (you)', 'ekonev', 'jleiner', 'ziyang', 'kting7', 'ffranksena']}
@@ -171,9 +187,10 @@ export const ThreadStatusItemsList: React.FunctionComponent<Props> = ({ thread: 
                         >
                             Sort
                         </ThreadStatusItemsListHeaderFilterButtonDropdown>
+                        {action}
                     </div>
                 </div>
-                <ThreadStatusItemsProgressBar />
+                {threadSettings.createPullRequests && <ThreadStatusItemsProgressBar />}
                 {itemsOrError === LOADING ? (
                     <LoadingSpinner className="mt-2" />
                 ) : isErrorLike(itemsOrError) ? (
