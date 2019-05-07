@@ -36,7 +36,8 @@ export const ThreadAreaHeader: React.FunctionComponent<Props> = ({ thread, areaU
                         activeClassName="area-header__nav-link--active"
                         exact={true}
                     >
-                        <HistoryIcon className="icon-inline" /> Activity
+                        <HistoryIcon className="icon-inline" /> Activity{' '}
+                        <span className="badge badge-secondary">50%</span>
                     </NavLink>
                     <NavLink
                         to={`${areaURL}/manage`}
