@@ -411,6 +411,9 @@ input DiscussionThreadTargetRepoInput {
 
 # Describes the creation of a new thread around some target (e.g. a file in a repo).
 input DiscussionThreadCreateInput {
+    # The kind of thread to create.
+    kind: DiscussionThreadKind!
+
     # An explicitly chosen title for the discussion thread. Otherwise, the title
     # will be chosen based on the 'contents' (e.g. the first line).
     title: String
@@ -421,12 +424,18 @@ input DiscussionThreadCreateInput {
     # The target repo of this discussion thread. This is nullable so that in
     # the future more target types may be added.
     targetRepo: DiscussionThreadTargetRepoInput
+
+    # The settings for the thread.
+    settings: String
 }
 
 # Describes an update mutation to an existing thread.
 input DiscussionThreadUpdateInput {
     # The ID of the thread to update.
     ThreadID: ID!
+
+    # When non-null, indicates that the thread's settings should be updated to the specified value.
+    settings: String
 
     # When non-null, indicates that the thread should be archived.
     Archive: Boolean
@@ -2524,10 +2533,23 @@ type DiscussionThreadTargetRepo {
 # do not understand gracefully.
 union DiscussionThreadTarget = DiscussionThreadTargetRepo
 
+# All possible kinds of discussion threads, which affects their behavior and display.
+enum DiscussionThreadKind {
+    # A normal discussion thread for conversation.
+    THREAD
+    # A saved search query that has alerts and other actions associated with it.
+    CHECK
+    # A code modification.
+    CODEMOD
+}
+
 # A discussion thread around some target (e.g. a file in a repo).
 type DiscussionThread {
     # The discussion thread ID (globally unique).
     id: ID!
+
+    # The kind of this discussion thread.
+    kind: DiscussionThreadKind!
 
     # The user who authored this discussion thread.
     author: User!
@@ -2540,6 +2562,12 @@ type DiscussionThread {
 
     # The target of this discussion thread.
     target: DiscussionThreadTarget!
+
+    # The settings for this discussion thread.
+    settings: String!
+
+    # The URL where this thread can be viewed in isolation.
+    url: String!
 
     # The URL at which this thread can be viewed inline (i.e. in the file blob view).
     #

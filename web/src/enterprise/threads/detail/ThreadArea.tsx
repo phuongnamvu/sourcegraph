@@ -1,7 +1,7 @@
 import AlertCircleIcon from 'mdi-react/AlertCircleIcon'
 import MapSearchIcon from 'mdi-react/MapSearchIcon'
 import React, { useMemo, useState } from 'react'
-import { Route, RouteComponentProps, Switch } from 'react-router'
+import { Redirect, Route, RouteComponentProps, Switch } from 'react-router'
 import * as GQL from '../../../../../shared/src/graphql/schema'
 import { ErrorLike, isErrorLike } from '../../../../../shared/src/util/errors'
 import { ErrorBoundary } from '../../../components/ErrorBoundary'
@@ -14,7 +14,7 @@ import { ThreadManagePage } from './ThreadManagePage'
 import { ThreadOverviewPage } from './ThreadOverviewPage'
 
 const NotFoundPage = () => (
-    <HeroPage icon={MapSearchIcon} title="404: Not Found" subtitle="Sorry, the requested thread page was not found." />
+    <HeroPage icon={MapSearchIcon} title="404: Not Found" subtitle="Sorry, the requested  page was not found." />
 )
 
 interface Props extends ThreadsAreaContext, RouteComponentProps<{ threadID: string }> {}
@@ -39,6 +39,20 @@ export const ThreadArea: React.FunctionComponent<Props> = props => {
         return <HeroPage icon={AlertCircleIcon} title="Error" subtitle={threadOrError.message} />
     }
 
+    if (threadOrError.kind !== props.kind) {
+        return (
+            <Redirect
+                to={{
+                    ...props.location,
+                    pathname: props.location.pathname.replace(
+                        `/${props.kind.toLowerCase()}s/`,
+                        `/${threadOrError.kind.toLowerCase()}s/`
+                    ),
+                }}
+            />
+        )
+    }
+
     const context: ThreadsAreaContext & { thread: GQL.IDiscussionThread; areaURL: string } = {
         ...props,
         thread: threadOrError,
@@ -48,7 +62,7 @@ export const ThreadArea: React.FunctionComponent<Props> = props => {
     return (
         <div className="thread-area area--vertical">
             <ThreadAreaHeader {...context} />
-            <div className="container pt-3">
+            <div className="container px-0 pt-3">
                 <ErrorBoundary location={props.location}>
                     <Switch>
                         <Route

@@ -52,6 +52,9 @@ func (t *discussionThreads) Create(ctx context.Context, newThread *types.Discuss
 	if newThread.ID != 0 {
 		return nil, errors.New("newThread.ID must be zero")
 	}
+	if !types.IsValidThreadKind(newThread.Kind) {
+		return nil, errors.New("newThread.Kind must be a valid kind")
+	}
 	if strings.TrimSpace(newThread.Title) == "" {
 		return nil, errors.New("newThread.Title must be present (and not whitespace)")
 	}
@@ -77,7 +80,9 @@ func (t *discussionThreads) Create(ctx context.Context, newThread *types.Discuss
 			}
 		}
 	} else {
-		return nil, errors.New("newThread must have a target")
+		// TODO!(sqs): do whatever other changes are needed after removing the target requirement
+		//
+		// return nil, errors.New("newThread must have a target")
 	}
 
 	// TODO(slimsag:discussions): should be in a transaction
@@ -86,13 +91,17 @@ func (t *discussionThreads) Create(ctx context.Context, newThread *types.Discuss
 	newThread.CreatedAt = time.Now()
 	newThread.UpdatedAt = newThread.CreatedAt
 	err := dbconn.Global.QueryRowContext(ctx, `INSERT INTO discussion_threads(
+		kind,
 		author_user_id,
 		title,
+		settings,
 		created_at,
 		updated_at
-	) VALUES ($1, $2, $3, $4) RETURNING id`,
+	) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+		newThread.Kind,
 		newThread.AuthorUserID,
 		newThread.Title,
+		newThread.Settings,
 		newThread.CreatedAt,
 		newThread.UpdatedAt,
 	).Scan(&newThread.ID)
@@ -115,13 +124,17 @@ func (t *discussionThreads) Create(ctx context.Context, newThread *types.Discuss
 		targetName = "target_repo_id"
 		targetID = newThread.TargetRepo.ID
 	default:
-		return nil, errors.New("unexpected target type")
+		// TODO!(sqs): do whatever other changes are needed after removing the target requirement
+		//
+		// return nil, errors.New("unexpected target type")
 	}
 
-	// Update the thread to reference the target we just created.
-	_, err = dbconn.Global.ExecContext(ctx, `UPDATE discussion_threads SET `+targetName+`=$1 WHERE id=$2`, targetID, newThread.ID)
-	if err != nil {
-		return nil, errors.Wrap(err, "update thread target")
+	if targetName != "" {
+		// Update the thread to reference the target we just created.
+		_, err = dbconn.Global.ExecContext(ctx, `UPDATE discussion_threads SET `+targetName+`=$1 WHERE id=$2`, targetID, newThread.ID)
+		if err != nil {
+			return nil, errors.Wrap(err, "update thread target")
+		}
 	}
 	return newThread, nil
 }
@@ -140,6 +153,9 @@ func (t *discussionThreads) Get(ctx context.Context, threadID int64) (*types.Dis
 }
 
 type DiscussionThreadsUpdateOptions struct {
+	// Settings, when non-nil, updates the thread's settings.
+	Settings *string
+
 	// Archive, when non-nil, specifies whether the thread is archived or not.
 	Archive *bool
 
@@ -160,6 +176,12 @@ func (t *discussionThreads) Update(ctx context.Context, threadID int64, opts *Di
 	// TODO(slimsag:discussions): should be in a transaction
 
 	anyUpdate := false
+	if opts.Settings != nil {
+		anyUpdate = true
+		if _, err := dbconn.Global.ExecContext(ctx, "UPDATE discussion_threads SET settings=$1 WHERE id=$2 AND deleted_at IS NULL", opts.Settings, threadID); err != nil {
+			return nil, err
+		}
+	}
 	if opts.Archive != nil {
 		anyUpdate = true
 		var archivedAt *time.Time
@@ -204,6 +226,9 @@ func (t *discussionThreads) Update(ctx context.Context, threadID int64, opts *Di
 type DiscussionThreadsListOptions struct {
 	// LimitOffset specifies SQL LIMIT and OFFSET counts. It may be nil (no limit / offset).
 	*LimitOffset
+
+	// Kind, when non-nil, matches threads with the specified kind.
+	Kind *types.ThreadKind
 
 	// TitleQuery, when non-nil, specifies that only threads whose title
 	// matches this string should be returned.
@@ -301,6 +326,12 @@ func (opts *DiscussionThreadsListOptions) SetFromQuery(ctx context.Context, quer
 
 	var reported bool
 	operators := map[string]func(value string){
+		// syntax: "is:thread" or "is:check" or "is:codemod"
+		"is": func(value string) {
+			v := types.ThreadKind(strings.ToUpper(value)) // kind strings are UPPERCASE
+			opts.Kind = &v
+		},
+
 		// syntax: `title:"some title"` or "title:sometitle"
 		// Primarily exists for the negation mode.
 		"title": func(value string) {
@@ -510,6 +541,9 @@ func (t *discussionThreads) fuzzyFilterThreads(opts *DiscussionThreadsListOption
 func (*discussionThreads) getListSQL(opts *DiscussionThreadsListOptions) (conds []*sqlf.Query) {
 	conds = []*sqlf.Query{sqlf.Sprintf("TRUE")}
 	conds = append(conds, sqlf.Sprintf("deleted_at IS NULL"))
+	if opts.Kind != nil {
+		conds = append(conds, sqlf.Sprintf("kind = %v", *opts.Kind))
+	}
 	if opts.TitleQuery != nil && strings.TrimSpace(*opts.TitleQuery) != "" {
 		conds = append(conds, sqlf.Sprintf("title ILIKE %v", extraFuzzy(*opts.TitleQuery)))
 	}
@@ -622,9 +656,11 @@ func (t *discussionThreads) getBySQL(ctx context.Context, query string, args ...
 	rows, err := dbconn.Global.QueryContext(ctx, `
 		SELECT
 			t.id,
+			t.kind,
 			t.author_user_id,
 			t.title,
 			t.target_repo_id,
+			t.settings,
 			t.created_at,
 			t.archived_at,
 			t.updated_at
@@ -642,9 +678,11 @@ func (t *discussionThreads) getBySQL(ctx context.Context, query string, args ...
 		)
 		err := rows.Scan(
 			&thread.ID,
+			&thread.Kind,
 			&thread.AuthorUserID,
 			&thread.Title,
 			&targetRepoID,
+			&thread.Settings,
 			&thread.CreatedAt,
 			&thread.ArchivedAt,
 			&thread.UpdatedAt,

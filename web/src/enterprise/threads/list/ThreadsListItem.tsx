@@ -33,7 +33,7 @@ export const ThreadsListItem: React.FunctionComponent<Props> = ({ thread, locati
                     <Link to={`${location.pathname}/${thread.id}`} style={{ color: 'var(--body-color)' }}>
                         {thread.title}
                     </Link>
-                    <span className="badge badge-secondary ml-1">123</span> {/* TODO!(sqs) */}
+                    <span className="badge badge-secondary ml-1 d-none">123</span> {/* TODO!(sqs) */}
                 </h3>
 
                 {thread.labels && (

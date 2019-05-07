@@ -26,6 +26,7 @@ const discussionCommentFieldsFragment = gql`
 const discussionThreadFieldsFragment = gql`
     fragment DiscussionThreadFields on DiscussionThread {
         id
+        kind
         author {
             ...UserFields
         }
@@ -54,6 +55,8 @@ const discussionThreadFieldsFragment = gql`
                 }
             }
         }
+        settings
+        url
         inlineURL
         createdAt
         updatedAt
@@ -228,6 +231,41 @@ export function addCommentToThread(threadID: GQL.ID, contents: string): Observab
                 throw createAggregateError(errors)
             }
             return data.discussions.addCommentToThread
+        })
+    )
+}
+
+/**
+ * Updates an existing discussion thread.
+ *
+ * @return Observable that emits the updated discussion thread and its comments.
+ */
+export function updateThread(input: GQL.IDiscussionThreadUpdateInput): Observable<GQL.IDiscussionThread> {
+    return mutateGraphQL(
+        gql`
+            mutation UpdateThread($input: DiscussionThreadUpdateInput!) {
+                discussions {
+                    updateThread(input: $input) {
+                        ...DiscussionThreadFields
+                        comments {
+                            totalCount
+                            nodes {
+                                ...DiscussionCommentFields
+                            }
+                        }
+                    }
+                }
+            }
+            ${discussionThreadFieldsFragment}
+            ${discussionCommentFieldsFragment}
+        `,
+        { input }
+    ).pipe(
+        map(({ data, errors }) => {
+            if (!data || !data.discussions || !data.discussions.updateThread) {
+                throw createAggregateError(errors)
+            }
+            return data.discussions.updateThread
         })
     )
 }

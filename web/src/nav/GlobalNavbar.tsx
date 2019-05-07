@@ -68,7 +68,8 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
     public componentDidUpdate(prevProps: Props): void {
         if (prevProps.location.search !== this.props.location.search) {
             const query = parseSearchURLQuery(this.props.location.search || '')
-            if (query) {
+            // TODO!(sqs): hacky, prevent from updating on other pages with ?q param
+            if (query && !/^\/(threads|checks|codemods)/.test(this.props.location.pathname)) {
                 this.props.onNavbarQueryChange(query)
             }
         }

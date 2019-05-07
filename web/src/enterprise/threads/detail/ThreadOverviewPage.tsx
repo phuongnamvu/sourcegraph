@@ -1,10 +1,14 @@
-import formatDistance from 'date-fns/formatDistance'
-import HistoryIcon from 'mdi-react/HistoryIcon'
+import H from 'history'
 import React from 'react'
+import { ExtensionsControllerProps } from '../../../../../shared/src/extensions/controller'
 import * as GQL from '../../../../../shared/src/graphql/schema'
+import { DiscussionsThread } from '../../../repo/blob/discussions/DiscussionsThread'
 
-interface Props {
+interface Props extends ExtensionsControllerProps {
     thread: GQL.IDiscussionThread
+
+    history: H.History
+    location: H.Location
 }
 
 /**
@@ -14,15 +18,12 @@ interface Props {
  * hits and you might want to group them arbitrarily into batches that you will address - that is a
  * "change".
  */
-export const ThreadOverviewPage: React.FunctionComponent<Props> = ({ thread }) => (
-    <div className="thread-overview-page">
-        <ul className="list-inline d-flex align-items-center mb-1">
-            <li className="list-inline-item">
-                <small className="text-muted">
-                    <HistoryIcon className="icon-inline" />
-                    {formatDistance(Date.parse(thread.createdAt), Date.now())} by {thread.author} in <code>TODO</code>
-                </small>
-            </li>
-        </ul>
-    </div>
-)
+export const ThreadOverviewPage: React.FunctionComponent<Props> = ({ thread, ...props }) => {
+    return (
+        <div className="thread-overview-page">
+            <div className="container">
+                <DiscussionsThread {...props} threadID={thread.id} className="border border-top-0 rounded" />
+            </div>
+        </div>
+    )
+}

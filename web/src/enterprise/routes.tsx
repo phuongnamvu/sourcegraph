@@ -1,5 +1,7 @@
+import FindReplaceIcon from 'mdi-react/FindReplaceIcon'
 import React from 'react'
 import { Redirect } from 'react-router'
+import * as GQL from '../../../shared/src/graphql/schema'
 import { LayoutRouteProps, routes } from '../routes'
 import { welcomeAreaRoutes } from './dotcom/welcome/routes'
 const WelcomeArea = React.lazy(async () => ({
@@ -47,6 +49,10 @@ export const enterpriseRoutes: ReadonlyArray<LayoutRouteProps> = [
     {
         path: '/checks',
         render: props => <ChecksArea {...props} />,
+    },
+    {
+        path: '/codemods',
+        render: props => <ThreadsArea {...props} kind={GQL.DiscussionThreadKind.CODEMOD} kindIcon={FindReplaceIcon} />,
     },
     ...routes,
 ]

@@ -10,13 +10,29 @@ import (
 // It intentionally does not try to e.g. alleviate null fields.
 type DiscussionThread struct {
 	ID           int64
+	Kind         ThreadKind
 	AuthorUserID int32
 	Title        string
 	TargetRepo   *DiscussionThreadTargetRepo
+	Settings     *string
 	CreatedAt    time.Time
 	ArchivedAt   *time.Time
 	UpdatedAt    time.Time
 	DeletedAt    *time.Time
+}
+
+// ThreadKind is the kind of a thread.
+type ThreadKind string
+
+const (
+	ThreadKindThread  ThreadKind = "THREAD"  // a normal thread
+	ThreadKindCheck              = "CHECK"   // a saved query with optional actions
+	ThreadKindCodemod            = "CODEMOD" // a codemod
+)
+
+// IsValidThreadKind reports whether kind is a valid kind of thread.
+func IsValidThreadKind(kind ThreadKind) bool {
+	return kind == ThreadKindThread || kind == ThreadKindCheck || kind == ThreadKindCodemod
 }
 
 // DiscussionThreadTargetRepo mirrors the underlying discussion_threads_target_repo field types exactly.

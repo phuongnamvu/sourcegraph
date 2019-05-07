@@ -1,6 +1,8 @@
 BEGIN;
 
 ALTER TABLE discussion_threads ADD COLUMN kind text;
+UPDATE discussion_threads SET kind='THREAD';
+ALTER TABLE discussion_threads ALTER COLUMN kind SET NOT NULL;
 ALTER TABLE discussion_threads ADD COLUMN settings text;
 ALTER TABLE discussion_threads ADD COLUMN parent_thread_id bigint REFERENCES threads(id) ON DELETE RESTRICT;
 CREATE INDEX ON discussion_threads(parent_thread_id);

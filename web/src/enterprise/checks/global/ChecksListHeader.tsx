@@ -35,7 +35,7 @@ export class ChecksListHeader extends React.Component<Props> {
                     <Link to={`${this.props.location.pathname}/-/manage`} className="btn btn-outline-link">
                         <SettingsIcon className="icon-inline" /> Manage{' '}
                     </Link>
-                    <Link to={`${this.props.location.pathname}/-/manage/new`} className="btn btn-success">
+                    <Link to={`${this.props.location.pathname}/-/new`} className="btn btn-success">
                         New check
                     </Link>
                 </div>

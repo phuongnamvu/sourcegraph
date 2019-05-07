@@ -19,11 +19,12 @@ import { DiscussionsNavbar } from './DiscussionsNavbar'
 interface Props extends ExtensionsControllerProps {
     threadID: GQL.ID
     commentID?: GQL.ID
-    repoID: GQL.ID
-    rev: string | undefined
-    filePath: string
+    filePath?: string
+    showNavbar?: boolean
     history: H.History
     location: H.Location
+    forceURL?: boolean
+    className?: string
 }
 
 interface State {
@@ -86,7 +87,7 @@ export class DiscussionsThread extends React.PureComponent<Props, State> {
 
         // If the thread is loaded, ensure that the URL hash is updated to
         // reflect the line that the discussion was created on.
-        if (thread) {
+        if (thread && this.props.forceURL) {
             const desiredHash = this.urlHashWithLine(thread, commentID)
             if (!hashesEqual(desiredHash, location.hash)) {
                 const discussionURL = location.pathname + location.search + desiredHash
@@ -95,8 +96,10 @@ export class DiscussionsThread extends React.PureComponent<Props, State> {
         }
 
         return (
-            <div className="discussions-thread">
-                <DiscussionsNavbar {...this.props} threadTitle={thread ? thread.title : undefined} />
+            <div className={`discussions-thread ${this.props.className || ''}`}>
+                {this.props.showNavbar && (
+                    <DiscussionsNavbar {...this.props} threadTitle={thread ? thread.title : undefined} />
+                )}
                 {loading && <LoadingSpinner className="icon-inline" />}
                 {error && (
                     <div className="discussions-thread__error alert alert-danger">

@@ -76,13 +76,13 @@ export class NavLinks extends React.PureComponent<Props> {
                     this.props.location.pathname !== '/welcome') && (
                     <>
                         <li className="nav-item">
-                            <Link to="/threads?q=is:check" className="nav-link d-flex align-items-center">
+                            <Link to="/checks" className="nav-link d-flex align-items-center">
                                 <CheckboxMultipleMarkedOutlineIcon className="icon-inline" />
                                 <span className="d-none d-lg-inline-block ml-1">Checks</span>
                             </Link>
                         </li>
                         <li className="nav-item">
-                            <Link to="/threads?q=is:codemod" className="nav-link d-flex align-items-center">
+                            <Link to="/codemods" className="nav-link d-flex align-items-center">
                                 <FindReplaceIcon className="icon-inline" />
                                 <span className="d-none d-lg-inline-block ml-1">Codemods</span>
                             </Link>

@@ -203,9 +203,11 @@ func (d *discussionThreadTargetRepoInput) populateLinesFromRepository(ctx contex
 
 func (r *discussionsMutationResolver) CreateThread(ctx context.Context, args *struct {
 	Input *struct {
+		Kind       types.ThreadKind
 		Title      *string
 		Contents   string
 		TargetRepo *discussionThreadTargetRepoInput
+		Settings   *string
 	}
 }) (*discussionThreadResolver, error) {
 	if args.Input.Title == nil {
@@ -236,8 +238,10 @@ func (r *discussionsMutationResolver) CreateThread(ctx context.Context, args *st
 
 	// Create the thread.
 	newThread := &types.DiscussionThread{
+		Kind:         args.Input.Kind,
 		AuthorUserID: currentUser.user.ID,
 		Title:        *args.Input.Title,
+		Settings:     args.Input.Settings,
 	}
 	if args.Input.TargetRepo != nil {
 		if err := args.Input.TargetRepo.validate(); err != nil {
@@ -270,6 +274,7 @@ func (r *discussionsMutationResolver) CreateThread(ctx context.Context, args *st
 func (r *discussionsMutationResolver) UpdateThread(ctx context.Context, args *struct {
 	Input *struct {
 		ThreadID graphql.ID
+		Settings *string
 		Archive  *bool
 		Delete   *bool
 	}
@@ -297,8 +302,9 @@ func (r *discussionsMutationResolver) UpdateThread(ctx context.Context, args *st
 		return nil, err
 	}
 	thread, err := db.DiscussionThreads.Update(ctx, threadID, &db.DiscussionThreadsUpdateOptions{
-		Archive: args.Input.Archive,
-		Delete:  delete,
+		Settings: args.Input.Settings,
+		Archive:  args.Input.Archive,
+		Delete:   delete,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "DiscussionThreads.Update")
@@ -642,6 +648,8 @@ func (d *discussionThreadResolver) ID() graphql.ID {
 	return marshalDiscussionID(d.t.ID)
 }
 
+func (d *discussionThreadResolver) Kind() types.ThreadKind { return d.t.Kind }
+
 func (d *discussionThreadResolver) Author(ctx context.Context) (*UserResolver, error) {
 	return UserByIDInt32(ctx, d.t.AuthorUserID)
 }
@@ -652,9 +660,20 @@ func (d *discussionThreadResolver) Target(ctx context.Context) *discussionThread
 	return &discussionThreadTargetResolver{t: d.t}
 }
 
+func (d *discussionThreadResolver) Settings(ctx context.Context) string {
+	if settings := d.t.Settings; settings != nil {
+		return *settings
+	}
+	return "{}"
+}
+
+func (d *discussionThreadResolver) URL(ctx context.Context) string {
+	return fmt.Sprintf("/threads/%s", d.ID())
+}
+
 func (d *discussionThreadResolver) InlineURL(ctx context.Context) (*string, error) {
 	url, err := discussions.URLToInlineThread(ctx, d.t)
-	if err != nil {
+	if url == nil || err != nil {
 		return nil, err
 	}
 	return strptr(url.String()), nil

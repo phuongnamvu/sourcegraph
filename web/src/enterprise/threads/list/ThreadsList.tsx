@@ -4,13 +4,20 @@ import AlertOutlineIcon from 'mdi-react/AlertOutlineIcon'
 import CheckIcon from 'mdi-react/CheckIcon'
 import React, { useMemo, useState } from 'react'
 import * as GQL from '../../../../../shared/src/graphql/schema'
-import { ErrorLike, isErrorLike } from '../../../../../shared/src/util/errors'
+import { asError, ErrorLike, isErrorLike } from '../../../../../shared/src/util/errors'
 import { fetchDiscussionThreads } from '../../../discussions/backend'
+import { nounForThreadKind } from '../util'
 import { ThreadsListHeader } from './ThreadsListHeader'
 import { ThreadsListHeaderFilterButtonDropdown } from './ThreadsListHeaderFilterButtonDropdown'
 import { ThreadsListItem } from './ThreadsListItem'
 
 interface Props {
+    kind: GQL.DiscussionThreadKind
+
+    query: string
+    onQueryChange: (query: string) => void
+
+    history: H.History
     location: H.Location
 }
 
@@ -19,19 +26,23 @@ const LOADING: 'loading' = 'loading'
 /**
  * The list of threads with a header.
  */
-export const ThreadsList: React.FunctionComponent<Props> = ({ location }) => {
+export const ThreadsList: React.FunctionComponent<Props> = ({ kind, query, onQueryChange, ...props }) => {
     const [threadsOrError, setThreadsOrError] = useState<typeof LOADING | GQL.IDiscussionThreadConnection | ErrorLike>(
         LOADING
     )
+
     // tslint:disable-next-line: no-floating-promises because fetchDiscussionThreads never throws
     useMemo(async () => {
-        const params = new URLSearchParams(location.search)
-        setThreadsOrError(await fetchDiscussionThreads(params as any).toPromise())
-    }, [location.search])
+        try {
+            setThreadsOrError(await fetchDiscussionThreads({ query }).toPromise())
+        } catch (err) {
+            setThreadsOrError(asError(err))
+        }
+    }, [query])
 
     return (
         <div className="threads-list">
-            <ThreadsListHeader location={location} />
+            <ThreadsListHeader {...props} kind={kind} query={query} onQueryChange={onQueryChange} />
             <div className="card">
                 <div className="card-header d-flex align-items-center justify-content-between">
                     <div className="form-thread mx-2">
@@ -39,9 +50,13 @@ export const ThreadsList: React.FunctionComponent<Props> = ({ location }) => {
                     </div>
                     <div className="font-weight-normal flex-1">
                         <strong>
-                            <AlertOutlineIcon className="icon-inline" /> 8 open &nbsp;{' '}
+                            <AlertOutlineIcon className="icon-inline" />{' '}
+                            {threadsOrError !== LOADING && !isErrorLike(threadsOrError)
+                                ? `${threadsOrError.totalCount} open`
+                                : 'Open'}{' '}
+                            &nbsp;{' '}
                         </strong>
-                        <CheckIcon className="icon-inline" /> 27 closed
+                        <CheckIcon className="icon-inline" /> 0 closed
                     </div>
                     <div>
                         <ThreadsListHeaderFilterButtonDropdown
@@ -80,10 +95,12 @@ export const ThreadsList: React.FunctionComponent<Props> = ({ location }) => {
                     <LoadingSpinner className="mt-2" />
                 ) : isErrorLike(threadsOrError) ? (
                     <div className="alert alert-error mt-2">{threadsOrError.message}</div>
+                ) : threadsOrError.nodes.length === 0 ? (
+                    <p className="p-2 mb-0 text-muted">No {nounForThreadKind(kind, true)} found.</p>
                 ) : (
                     <ul className="list-group list-group-flush">
                         {threadsOrError.nodes.map((thread, i) => (
-                            <ThreadsListItem key={i} location={location} thread={thread} />
+                            <ThreadsListItem key={i} location={props.location} thread={thread} />
                         ))}
                     </ul>
                 )}
