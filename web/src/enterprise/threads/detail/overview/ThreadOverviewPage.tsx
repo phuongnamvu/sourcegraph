@@ -1,8 +1,8 @@
 import H from 'history'
 import React from 'react'
-import { ExtensionsControllerProps } from '../../../../../shared/src/extensions/controller'
-import * as GQL from '../../../../../shared/src/graphql/schema'
-import { DiscussionsThread } from '../../../repo/blob/discussions/DiscussionsThread'
+import { ExtensionsControllerProps } from '../../../../../../shared/src/extensions/controller'
+import * as GQL from '../../../../../../shared/src/graphql/schema'
+import { DiscussionsThread } from '../../../../repo/blob/discussions/DiscussionsThread'
 
 interface Props extends ExtensionsControllerProps {
     thread: GQL.IDiscussionThread

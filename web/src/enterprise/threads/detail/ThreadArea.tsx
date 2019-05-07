@@ -8,10 +8,10 @@ import { ErrorBoundary } from '../../../components/ErrorBoundary'
 import { HeroPage } from '../../../components/HeroPage'
 import { fetchDiscussionThreadAndComments } from '../../../discussions/backend'
 import { ThreadsAreaContext } from '../global/ThreadsArea'
-import { ThreadActivityPage } from './ThreadActivityPage'
+import { ThreadActivityPage } from './activity/ThreadActivityPage'
+import { ThreadManagePage } from './manage/ThreadManagePage'
+import { ThreadOverviewPage } from './overview/ThreadOverviewPage'
 import { ThreadAreaHeader } from './ThreadAreaHeader'
-import { ThreadManagePage } from './ThreadManagePage'
-import { ThreadOverviewPage } from './ThreadOverviewPage'
 
 const NotFoundPage = () => (
     <HeroPage icon={MapSearchIcon} title="404: Not Found" subtitle="Sorry, the requested  page was not found." />

@@ -1,9 +1,9 @@
 import H from 'history'
 import { upperFirst } from 'lodash'
 import React from 'react'
-import * as GQL from '../../../../../shared/src/graphql/schema'
-import { ThreadDeleteButton } from '../form/ThreadDeleteButton'
-import { nounForThreadKind } from '../util'
+import * as GQL from '../../../../../../shared/src/graphql/schema'
+import { ThreadDeleteButton } from '../../form/ThreadDeleteButton'
+import { nounForThreadKind } from '../../util'
 import { ThreadSettingsEditForm } from './ThreadSettingsEditForm'
 
 interface Props {

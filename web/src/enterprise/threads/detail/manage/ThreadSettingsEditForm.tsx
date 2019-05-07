@@ -2,11 +2,11 @@ import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import H from 'history'
 import CheckIcon from 'mdi-react/CheckIcon'
 import React, { useCallback, useState } from 'react'
-import * as GQL from '../../../../../shared/src/graphql/schema'
-import { asError, ErrorLike, isErrorLike } from '../../../../../shared/src/util/errors'
-import { Form } from '../../../components/Form'
-import { updateThread } from '../../../discussions/backend'
-import { ThreadSettingsEditor } from '../form/ThreadSettingsEditor'
+import * as GQL from '../../../../../../shared/src/graphql/schema'
+import { asError, ErrorLike, isErrorLike } from '../../../../../../shared/src/util/errors'
+import { Form } from '../../../../components/Form'
+import { updateThread } from '../../../../discussions/backend'
+import { ThreadSettingsEditor } from '../../form/ThreadSettingsEditor'
 
 interface Props {
     thread: Pick<GQL.IDiscussionThread, 'id' | 'settings'>
