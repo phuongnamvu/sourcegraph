@@ -18,12 +18,8 @@ interface Props extends ExtensionsControllerProps {
  * hits and you might want to group them arbitrarily into batches that you will address - that is a
  * "change".
  */
-export const ThreadOverviewPage: React.FunctionComponent<Props> = ({ thread, ...props }) => {
-    return (
-        <div className="thread-overview-page">
-            <div className="container">
-                <DiscussionsThread {...props} threadID={thread.id} className="border border-top-0 rounded" />
-            </div>
-        </div>
-    )
-}
+export const ThreadOverviewPage: React.FunctionComponent<Props> = ({ thread, ...props }) => (
+    <div className="thread-overview-page">
+        <DiscussionsThread {...props} threadID={thread.id} className="border border-top-0 rounded" />
+    </div>
+)

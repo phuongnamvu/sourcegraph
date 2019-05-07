@@ -3,7 +3,7 @@ import MapSearchIcon from 'mdi-react/MapSearchIcon'
 import React, { useMemo, useState } from 'react'
 import { Redirect, Route, RouteComponentProps, Switch } from 'react-router'
 import * as GQL from '../../../../../shared/src/graphql/schema'
-import { ErrorLike, isErrorLike } from '../../../../../shared/src/util/errors'
+import { asError, ErrorLike, isErrorLike } from '../../../../../shared/src/util/errors'
 import { ErrorBoundary } from '../../../components/ErrorBoundary'
 import { HeroPage } from '../../../components/HeroPage'
 import { fetchDiscussionThreadAndComments } from '../../../discussions/backend'
@@ -29,7 +29,11 @@ export const ThreadArea: React.FunctionComponent<Props> = props => {
 
     // tslint:disable-next-line: no-floating-promises beacuse fetchDiscussionThreadAndComments never throws
     useMemo(async () => {
-        setThreadOrError(await fetchDiscussionThreadAndComments(props.match.params.threadID).toPromise())
+        try {
+            setThreadOrError(await fetchDiscussionThreadAndComments(props.match.params.threadID).toPromise())
+        } catch (err) {
+            setThreadOrError(asError(err))
+        }
     }, [props.match.params.threadID])
 
     if (threadOrError === LOADING) {
@@ -62,7 +66,7 @@ export const ThreadArea: React.FunctionComponent<Props> = props => {
     return (
         <div className="thread-area area--vertical">
             <ThreadAreaHeader {...context} />
-            <div className="container px-0 pt-3">
+            <div className="container pt-3">
                 <ErrorBoundary location={props.location}>
                     <Switch>
                         <Route

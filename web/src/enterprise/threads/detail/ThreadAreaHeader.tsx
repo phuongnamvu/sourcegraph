@@ -1,3 +1,4 @@
+import CheckboxMultipleMarkedOutlineIcon from 'mdi-react/CheckboxMultipleMarkedOutlineIcon'
 import HistoryIcon from 'mdi-react/HistoryIcon'
 import SettingsIcon from 'mdi-react/SettingsIcon'
 import React from 'react'

@@ -23,7 +23,6 @@ import { TelemetryProps } from '../../../../shared/src/telemetry/telemetryServic
 import { ErrorLike, isErrorLike } from '../../../../shared/src/util/errors'
 import { isDefined } from '../../../../shared/src/util/types'
 import { buildSearchURLQuery } from '../../../../shared/src/util/url'
-import { registerCodemodContributions } from '../../codemod/contributions'
 import { ModalContainer } from '../../components/ModalContainer'
 import { SearchResult } from '../../components/SearchResult'
 import { ThemeProps } from '../../theme'
@@ -275,8 +274,6 @@ export class SearchResultsList extends React.PureComponent<SearchResultsListProp
                     this.setState({ fileMatchRepoDisplayNames })
                 })
         )
-
-        this.subscriptions.add(registerCodemodContributions(this.props))
     }
 
     public componentDidMount(): void {

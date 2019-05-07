@@ -93,6 +93,7 @@ export const SearchContextBar: React.FunctionComponent<Props> = ({
                     <ActionsNavItems
                         {...props}
                         menu={ContributableMenu.SearchResultsToolbar}
+                        listClass="flex-column"
                         wrapInList={true}
                         actionItemClass="nav-link px-2"
                     />

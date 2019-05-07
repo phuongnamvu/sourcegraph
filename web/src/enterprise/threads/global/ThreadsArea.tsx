@@ -22,6 +22,7 @@ const NotFoundPage: React.FunctionComponent = () => (
 export interface ThreadsAreaContext extends ExtensionsControllerProps {
     kind: GQL.DiscussionThreadKind
     kindIcon: React.ComponentType<{ className?: string }>
+    isLightTheme: boolean
 }
 
 export interface ThreadsAreaProps
