@@ -10,6 +10,7 @@ import { ThreadSettingsEditor } from '../../form/ThreadSettingsEditor'
 
 interface Props {
     thread: Pick<GQL.IDiscussionThread, 'id' | 'settings'>
+    onThreadUpdate: (thread: GQL.IDiscussionThread | ErrorLike) => void
     isLightTheme: boolean
     history: H.History
 }
@@ -18,6 +19,7 @@ const LOADING: 'loading' = 'loading'
 
 export const ThreadSettingsEditForm: React.FunctionComponent<Props> = ({
     thread: { id: threadID, settings },
+    onThreadUpdate,
     ...props
 }) => {
     const [uncommittedSettings, setUncommittedSettings] = useState(settings)
@@ -29,6 +31,7 @@ export const ThreadSettingsEditForm: React.FunctionComponent<Props> = ({
             try {
                 const thread = await updateThread({ ThreadID: threadID, settings: uncommittedSettings }).toPromise()
                 setUpdateOrError(thread)
+                onThreadUpdate(thread)
             } catch (err) {
                 setUpdateOrError(asError(err))
             }

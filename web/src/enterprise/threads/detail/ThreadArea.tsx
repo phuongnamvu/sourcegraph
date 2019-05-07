@@ -7,7 +7,9 @@ import { asError, ErrorLike, isErrorLike } from '../../../../../shared/src/util/
 import { ErrorBoundary } from '../../../components/ErrorBoundary'
 import { HeroPage } from '../../../components/HeroPage'
 import { fetchDiscussionThreadAndComments } from '../../../discussions/backend'
+import { parseJSON } from '../../../settings/configuration'
 import { ThreadsAreaContext } from '../global/ThreadsArea'
+import { ThreadSettings } from '../settings'
 import { ThreadActivityPage } from './activity/ThreadActivityPage'
 import { ThreadManagePage } from './manage/ThreadManagePage'
 import { ThreadOverviewPage } from './overview/ThreadOverviewPage'
@@ -57,9 +59,16 @@ export const ThreadArea: React.FunctionComponent<Props> = props => {
         )
     }
 
-    const context: ThreadsAreaContext & { thread: GQL.IDiscussionThread; areaURL: string } = {
+    const context: ThreadsAreaContext & {
+        thread: GQL.IDiscussionThread
+        onThreadUpdate: (thread: GQL.IDiscussionThread | ErrorLike) => void
+        threadSettings: ThreadSettings
+        areaURL: string
+    } = {
         ...props,
         thread: threadOrError,
+        onThreadUpdate: thread => setThreadOrError(thread),
+        threadSettings: parseJSON(threadOrError.settings),
         areaURL: props.match.url,
     }
 

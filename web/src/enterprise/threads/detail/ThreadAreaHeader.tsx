@@ -5,16 +5,23 @@ import { NavLink } from 'react-router-dom'
 import { ChatIcon } from '../../../../../shared/src/components/icons'
 import * as GQL from '../../../../../shared/src/graphql/schema'
 import { ThreadsAreaContext } from '../global/ThreadsArea'
+import { ThreadSettings } from '../settings'
 
 interface Props extends Pick<ThreadsAreaContext, 'kindIcon'> {
     thread: GQL.IDiscussionThread
+    threadSettings: ThreadSettings
     areaURL: string
 }
 
 /**
  * The header for the thread area (for a single thread).
  */
-export const ThreadAreaHeader: React.FunctionComponent<Props> = ({ thread, areaURL, kindIcon: KindIcon }) => (
+export const ThreadAreaHeader: React.FunctionComponent<Props> = ({
+    thread,
+    threadSettings,
+    areaURL,
+    kindIcon: KindIcon,
+}) => (
     <div className="thread-header border-top-0 border-bottom simple-area-header">
         <div className="container">
             <h1 className="font-weight-normal mt-3">
@@ -37,7 +44,7 @@ export const ThreadAreaHeader: React.FunctionComponent<Props> = ({ thread, areaU
                         exact={true}
                     >
                         <HistoryIcon className="icon-inline" /> Activity{' '}
-                        <span className="badge badge-secondary">50%</span>
+                        {threadSettings.pullRequestTemplate && <span className="badge badge-secondary">50%</span>}
                     </NavLink>
                     <NavLink
                         to={`${areaURL}/manage`}

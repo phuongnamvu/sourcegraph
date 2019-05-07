@@ -83,7 +83,7 @@ export function registerCodemodContributions({
                         title,
                         kind: GQL.DiscussionThreadKind.CODEMOD,
                         settings: JSON.stringify({ query }),
-                        contents: '',
+                        contents: 'Created codemod',
                     }).toPromise()
                     history.push(thread.url)
                 }
