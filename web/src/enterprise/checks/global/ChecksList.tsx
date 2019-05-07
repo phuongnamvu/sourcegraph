@@ -1,7 +1,7 @@
 import H from 'history'
 import AlertOutlineIcon from 'mdi-react/AlertOutlineIcon'
 import CheckIcon from 'mdi-react/CheckIcon'
-import * as React from 'react'
+import React from 'react'
 import { CHECKS } from '../data'
 import { ChecksListHeader } from './ChecksListHeader'
 import { ChecksListHeaderFilterButtonDropdown } from './ChecksListHeaderFilterButtonDropdown'

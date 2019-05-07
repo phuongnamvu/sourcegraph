@@ -13,9 +13,9 @@ interface Props {
 }
 
 /**
- * A button dropdown with filter options shown in the list of checks.
+ * A button dropdown with filter options shown in the list of threads.
  */
-export const ChecksListHeaderFilterButtonDropdown: React.FunctionComponent<Props> = ({ children, header, items }) => {
+export const ThreadsListHeaderFilterButtonDropdown: React.FunctionComponent<Props> = ({ children, header, items }) => {
     const [isOpen, setIsOpen] = React.useState(false)
 
     return (

@@ -1,5 +1,5 @@
 import HistoryIcon from 'mdi-react/HistoryIcon'
-import * as React from 'react'
+import React from 'react'
 import { Check } from '../data'
 
 interface Props {

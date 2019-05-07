@@ -1,7 +1,6 @@
 import * as H from 'history'
 import CheckboxMultipleMarkedOutlineIcon from 'mdi-react/CheckboxMultipleMarkedOutlineIcon'
-import EyeIcon from 'mdi-react/EyeIcon'
-import HistoryIcon from 'mdi-react/HistoryIcon'
+import FindReplaceIcon from 'mdi-react/FindReplaceIcon'
 import * as React from 'react'
 import { Subscription } from 'rxjs'
 import { ContributableMenu } from '../../../shared/src/api/protocol'
@@ -77,21 +76,15 @@ export class NavLinks extends React.PureComponent<Props> {
                     this.props.location.pathname !== '/welcome') && (
                     <>
                         <li className="nav-item">
-                            <Link to="/explore" className="nav-link d-flex align-items-center">
-                                <EyeIcon className="icon-inline" />
-                                <span className="d-none d-lg-inline-block ml-1">Explore</span>
-                            </Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link to="/changes" className="nav-link d-flex align-items-center">
-                                <HistoryIcon className="icon-inline" />
-                                <span className="d-none d-lg-inline-block ml-1">Changes</span>
-                            </Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link to="/checks" className="nav-link d-flex align-items-center">
+                            <Link to="/threads?q=is:check" className="nav-link d-flex align-items-center">
                                 <CheckboxMultipleMarkedOutlineIcon className="icon-inline" />
                                 <span className="d-none d-lg-inline-block ml-1">Checks</span>
+                            </Link>
+                        </li>
+                        <li className="nav-item">
+                            <Link to="/threads?q=is:codemod" className="nav-link d-flex align-items-center">
+                                <FindReplaceIcon className="icon-inline" />
+                                <span className="d-none d-lg-inline-block ml-1">Codemods</span>
                             </Link>
                         </li>
                     </>

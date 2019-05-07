@@ -3,49 +3,49 @@ import React from 'react'
 import { Route, RouteComponentProps, Switch } from 'react-router'
 import { HeroPage } from '../../../components/HeroPage'
 import { RepoHeaderContributionsLifecycleProps } from '../../../repo/RepoHeader'
-import { CheckArea } from '../detail/CheckArea'
-import { ChecksOverviewPage } from './ChecksOverviewPage'
-import { ChecksManageArea } from './manage/ChecksManageArea'
+import { ThreadArea } from '../detail/ThreadArea'
+import { ThreadsManageArea } from './manage/ThreadsManageArea'
+import { ThreadsOverviewPage } from './ThreadsOverviewPage'
 
 const NotFoundPage = () => (
-    <HeroPage icon={MapSearchIcon} title="404: Not Found" subtitle="Sorry, the requested checks page was not found." />
+    <HeroPage icon={MapSearchIcon} title="404: Not Found" subtitle="Sorry, the requested threads page was not found." />
 )
 
 /**
- * Properties passed to all page components in the checks area.
+ * Properties passed to all page components in the threads area.
  */
-export interface ChecksAreaContext {}
+export interface ThreadsAreaContext {}
 
-interface Props extends ChecksAreaContext, RouteComponentProps<{}>, RepoHeaderContributionsLifecycleProps {}
+interface Props extends ThreadsAreaContext, RouteComponentProps<{}>, RepoHeaderContributionsLifecycleProps {}
 
 /**
- * The global checks area.
+ * The global threads area.
  */
-export class ChecksArea extends React.Component<Props> {
+export class ThreadsArea extends React.Component<Props> {
     public render(): JSX.Element | null {
-        const context: ChecksAreaContext = {}
+        const context: ThreadsAreaContext = {}
 
         return (
-            <div className="checks-area area--vertical pt-0">
+            <div className="threads-area area--vertical pt-0">
                 <Switch>
                     <Route
                         path={this.props.match.url}
                         key="hardcoded-key" // see https://github.com/ReactTraining/react-router/issues/4578#issuecomment-334489490
                         exact={true}
                         // tslint:disable-next-line:jsx-no-lambda
-                        render={routeComponentProps => <ChecksOverviewPage {...routeComponentProps} {...context} />}
+                        render={routeComponentProps => <ThreadsOverviewPage {...routeComponentProps} {...context} />}
                     />
                     <Route
                         path={`${this.props.match.url}/-/manage`}
                         key="hardcoded-key" // see https://github.com/ReactTraining/react-router/issues/4578#issuecomment-334489490
                         // tslint:disable-next-line:jsx-no-lambda
-                        render={routeComponentProps => <ChecksManageArea {...routeComponentProps} {...context} />}
+                        render={routeComponentProps => <ThreadsManageArea {...routeComponentProps} {...context} />}
                     />
                     <Route
-                        path={`${this.props.match.url}/:checkID`}
+                        path={`${this.props.match.url}/:threadID`}
                         key="hardcoded-key" // see https://github.com/ReactTraining/react-router/issues/4578#issuecomment-334489490
                         // tslint:disable-next-line:jsx-no-lambda
-                        render={routeComponentProps => <CheckArea {...routeComponentProps} {...context} />}
+                        render={routeComponentProps => <ThreadArea {...routeComponentProps} {...context} />}
                     />
                     <Route key="hardcoded-key" component={NotFoundPage} />
                 </Switch>

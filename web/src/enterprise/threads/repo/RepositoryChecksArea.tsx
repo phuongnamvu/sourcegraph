@@ -11,36 +11,36 @@ const NotFoundPage = () => (
     <HeroPage
         icon={MapSearchIcon}
         title="404: Not Found"
-        subtitle="Sorry, the requested repository checks page was not found."
+        subtitle="Sorry, the requested repository threads page was not found."
     />
 )
 
 /**
- * Properties passed to all page components in the repository checks area.
+ * Properties passed to all page components in the repository threads area.
  */
-export interface RepositoryChecksAreaContext {
+export interface RepositoryThreadsAreaContext {
     /**
      * The repository.
      */
     repo: GQL.IRepository
 }
 
-interface Props extends RepositoryChecksAreaContext, RouteComponentProps<{}>, RepoHeaderContributionsLifecycleProps {
+interface Props extends RepositoryThreadsAreaContext, RouteComponentProps<{}>, RepoHeaderContributionsLifecycleProps {
     routePrefix: string
 }
 
 /**
- * The repository checks area.
+ * The repository threads area.
  */
-export class RepositoryChecksArea extends React.Component<Props> {
+export class RepositoryThreadsArea extends React.Component<Props> {
     public render(): JSX.Element | null {
         return (
-            <div className="repository-checks-area area--vertical pt-0">
+            <div className="repository-threads-area area--vertical pt-0">
                 <RepoHeaderContributionPortal
                     position="nav"
                     element={
-                        <Link to={this.props.match.url} key="checks">
-                            Checks
+                        <Link to={this.props.match.url} key="threads">
+                            Threads
                         </Link>
                     }
                     repoHeaderContributionsLifecycleProps={this.props.repoHeaderContributionsLifecycleProps}

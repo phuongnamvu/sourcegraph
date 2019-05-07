@@ -1,5 +1,5 @@
 import H from 'history'
-import * as React from 'react'
+import React from 'react'
 import { FilteredConnection } from '../../../../components/FilteredConnection'
 import { queryChecks } from '../../data'
 import { Check } from '../../data'
