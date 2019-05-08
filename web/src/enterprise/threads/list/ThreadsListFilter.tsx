@@ -46,7 +46,6 @@ export const ThreadsListFilter: React.FunctionComponent<Props> = ({ value, onCha
                     className="form-control"
                     aria-label="Filter threads"
                     autoCapitalize="off"
-                    defaultValue={value}
                     value={uncommittedValue}
                     onChange={e => setUncommittedValue(e.currentTarget.value)}
                 />

@@ -6,6 +6,7 @@ import React, { useMemo, useState } from 'react'
 import * as GQL from '../../../../../shared/src/graphql/schema'
 import { asError, ErrorLike, isErrorLike } from '../../../../../shared/src/util/errors'
 import { fetchDiscussionThreads } from '../../../discussions/backend'
+import { ListHeaderQueryLinks, QueryLink } from '../components/ListHeaderQueryLinks'
 import { nounForThreadKind } from '../util'
 import { ThreadsListHeader } from './ThreadsListHeader'
 import { ThreadsListHeaderFilterButtonDropdown } from './ThreadsListHeaderFilterButtonDropdown'
@@ -44,20 +45,35 @@ export const ThreadsList: React.FunctionComponent<Props> = ({ kind, query, onQue
         <div className="threads-list">
             <ThreadsListHeader {...props} kind={kind} query={query} onQueryChange={onQueryChange} />
             <div className="card">
-                <div className="card-header d-flex align-items-center justify-content-between">
+                <div className="card-header d-flex align-items-center justify-content-between font-weight-normal">
                     <div className="form-check mx-2">
                         <input className="form-check-input position-static" type="checkbox" aria-label="Select item" />
                     </div>
-                    <div className="font-weight-normal flex-1">
-                        <strong>
-                            <AlertOutlineIcon className="icon-inline" />{' '}
-                            {threadsOrError !== LOADING && !isErrorLike(threadsOrError)
-                                ? `${threadsOrError.totalCount} open`
-                                : 'Open'}{' '}
-                            &nbsp;{' '}
-                        </strong>
-                        <CheckIcon className="icon-inline" /> 0 closed
-                    </div>
+                    {threadsOrError !== LOADING && !isErrorLike(threadsOrError) ? (
+                        <ListHeaderQueryLinks
+                            activeQuery={query}
+                            links={[
+                                {
+                                    label: 'open',
+                                    queryField: 'is',
+                                    queryValue: 'open',
+                                    count: threadsOrError.totalCount,
+                                    icon: AlertOutlineIcon,
+                                },
+                                {
+                                    label: 'closed',
+                                    queryField: 'is',
+                                    queryValue: 'closed',
+                                    count: 0,
+                                    icon: CheckIcon,
+                                },
+                            ]}
+                            location={props.location}
+                            className="flex-1"
+                        />
+                    ) : (
+                        <div className="flex-1" />
+                    )}
                     <div>
                         <ThreadsListHeaderFilterButtonDropdown
                             header="Filter by who's assigned"

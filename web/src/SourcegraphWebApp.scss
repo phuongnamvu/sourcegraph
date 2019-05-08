@@ -71,6 +71,10 @@ $theme-colors-light: (
 $body-color: var(--body-color);
 $body-bg: var(--body-bg);
 
+.text-body {
+    color: var(--body-color) !important;
+}
+
 $text-muted: var(--text-muted);
 
 // Borders

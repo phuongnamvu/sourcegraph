@@ -1,11 +1,13 @@
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
 import CloseCircleIcon from 'mdi-react/CloseCircleIcon'
+import DotsHorizontalCircleIcon from 'mdi-react/DotsHorizontalCircleIcon'
 import SourcePullIcon from 'mdi-react/SourcePullIcon'
 import React, { useMemo, useState } from 'react'
 import { of } from 'rxjs'
 import * as GQL from '../../../../../../shared/src/graphql/schema'
 import { asError, ErrorLike, isErrorLike } from '../../../../../../shared/src/util/errors'
+import { ListHeaderQueryLinks } from '../../components/ListHeaderQueryLinks'
 import { ThreadSettings } from '../../settings'
 import { PullRequestStatusItem } from './PullRequestStatusItem'
 import { ThreadStatusItemsListHeaderFilterButtonDropdown } from './ThreadStatusItemsListHeaderFilterButtonDropdown'
@@ -157,22 +159,45 @@ export const ThreadStatusItemsList: React.FunctionComponent<Props> = ({
                     <div className="form-check mx-2">
                         <input className="form-check-input position-static" type="checkbox" aria-label="Select item" />
                     </div>
-                    <div className="font-weight-normal flex-1">
-                        {threadSettings.createPullRequests ? '50%' : '0%'} complete&nbsp;&nbsp;
-                        <SourcePullIcon className="icon-inline" />{' '}
-                        {itemsOrError !== LOADING && !isErrorLike(itemsOrError)
-                            ? `${itemsOrError.nodes.filter(({ status }) => status === 'open').length} open`
-                            : 'Open'}{' '}
-                        &nbsp;&nbsp;
-                        <CheckCircleIcon className="icon-inline" />{' '}
-                        {itemsOrError !== LOADING && !isErrorLike(itemsOrError)
-                            ? `${itemsOrError.nodes.filter(({ status }) => status === 'merged').length} merged`
-                            : 'Merged'}{' '}
-                        &nbsp;&nbsp;
-                        <CloseCircleIcon className="icon-inline" />{' '}
-                        {itemsOrError !== LOADING && !isErrorLike(itemsOrError)
-                            ? `${itemsOrError.nodes.filter(({ status }) => status === 'closed').length} closed`
-                            : 'Closed'}{' '}
+                    <div className="font-weight-normal flex-1 d-flex align-items-center">
+                        <span className="mr-2">{threadSettings.createPullRequests ? '50%' : '0%'} complete</span>
+                        {itemsOrError !== LOADING && !isErrorLike(itemsOrError) && (
+                            <ListHeaderQueryLinks
+                                activeQuery={'TODO!(sqs)'}
+                                links={[
+                                    {
+                                        label: 'pending',
+                                        queryField: 'is',
+                                        queryValue: 'pending',
+                                        count: itemsOrError.nodes.filter(({ status }) => status === 'pending').length,
+                                        icon: DotsHorizontalCircleIcon,
+                                    },
+                                    {
+                                        label: 'open',
+                                        queryField: 'is',
+                                        queryValue: 'open',
+                                        count: itemsOrError.nodes.filter(({ status }) => status === 'open').length,
+                                        icon: SourcePullIcon,
+                                    },
+                                    {
+                                        label: 'merged',
+                                        queryField: 'is',
+                                        queryValue: 'merged',
+                                        count: itemsOrError.nodes.filter(({ status }) => status === 'merged').length,
+                                        icon: CheckCircleIcon,
+                                    },
+                                    {
+                                        label: 'closed',
+                                        queryField: 'is',
+                                        queryValue: 'closed',
+                                        count: itemsOrError.nodes.filter(({ status }) => status === 'closed').length,
+                                        icon: CloseCircleIcon,
+                                    },
+                                ]}
+                                location={location}
+                                className="flex-1"
+                            />
+                        )}
                     </div>
                     <div className="d-flex">
                         <ThreadStatusItemsListHeaderFilterButtonDropdown
