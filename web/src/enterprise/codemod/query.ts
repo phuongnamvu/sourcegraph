@@ -6,7 +6,7 @@ export function queryFindAndReplaceOptions(query: string): { find: string; repla
     if (!m) {
         return { find: '', replace: '' }
     }
-    const find = m[1]
+    const find = (m[1] || '')
         .split(/\s+/gm)
         .filter(part => !/^\w+:/m.test(part))
         .join(' ')
